@@ -1,0 +1,1098 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CricScore Pro - Live Center</title>
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    
+    <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&display=swap" rel="stylesheet">
+
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        cricket: {
+                            green: '#2e7d32',
+                            dark: '#1b5e20',
+                            pitch: '#e8f5e9',
+                            ball: '#b71c1c'
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Roboto', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+
+    <style>
+        body { font-family: 'Roboto', sans-serif; }
+        .cricket-bg {
+            background-image: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1531415074968-bc2ce8a10022?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
+            background-size: cover;
+            background-position: center;
+            background-attachment: fixed;
+        }
+        .glass-panel {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(10px);
+        }
+        .dark .glass-panel {
+            background: rgba(31, 41, 55, 0.95);
+        }
+        .hide-scroll::-webkit-scrollbar { display: none; }
+        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
+        
+        .score-ball {
+            width: 36px;
+            height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border-radius: 50%;
+            font-weight: bold;
+            font-size: 0.8rem;
+        }
+        
+        .modal { transition: opacity 0.25s ease; }
+        body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
+
+        /* Loading Overlay */
+        #globalLoader {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #111827;
+            z-index: 9999;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            color: white;
+            transition: opacity 0.5s ease-out;
+        }
+        
+        /* Audio Wave Animation */
+        .audio-wave {
+            display: inline-flex;
+            align-items: center;
+            height: 20px;
+            gap: 2px;
+        }
+        .audio-wave span {
+            display: block;
+            width: 3px;
+            height: 100%;
+            background-color: #22c55e;
+            animation: audio-wave 1s infinite ease-in-out;
+        }
+        .audio-wave span:nth-child(1) { animation-delay: 0.0s; height: 60%; }
+        .audio-wave span:nth-child(2) { animation-delay: 0.1s; height: 30%; }
+        .audio-wave span:nth-child(3) { animation-delay: 0.2s; height: 100%; }
+        .audio-wave span:nth-child(4) { animation-delay: 0.3s; height: 50%; }
+        @keyframes audio-wave {
+            0%, 100% { transform: scaleY(1); }
+            50% { transform: scaleY(0.5); }
+        }
+    </style>
+</head>
+<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-200">
+
+    <!-- Global Loader -->
+    <div id="globalLoader">
+        <i class="fas fa-baseball-bat-ball fa-spin text-5xl text-green-500 mb-4"></i>
+        <h2 class="text-xl font-bold tracking-widest">CRICSCORE LIVE</h2>
+        <p class="text-gray-400 text-sm mt-2">Loading Live Data...</p>
+    </div>
+
+    <!-- Navigation -->
+    <nav class="bg-cricket-dark text-white shadow-lg sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center cursor-pointer" onclick="switchView('live')">
+                    <i class="fas fa-baseball-bat-ball text-2xl mr-2 text-green-400"></i>
+                    <span class="font-bold text-xl tracking-tight">CricScore Live</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <button id="themeToggle" class="p-2 rounded hover:bg-white/10" title="Toggle Theme">
+                        <i class="fas fa-moon"></i>
+                    </button>
+                    <!-- No Login/Profile Section -->
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <div id="appContainer" class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-6">
+        
+        <!-- Navigation Tabs -->
+        <div class="flex justify-center sm:justify-start overflow-x-auto space-x-2 mb-6 hide-scroll pb-2">
+            <button onclick="switchView('live')" class="nav-btn bg-white dark:bg-gray-800 px-6 py-2 rounded-full shadow hover:bg-green-50 dark:hover:bg-gray-700 whitespace-nowrap active-nav-btn" data-target="live">
+                <i class="fas fa-broadcast-tower text-red-500 mr-2"></i><span>Live Matches</span>
+            </button>
+            <button onclick="switchView('tournaments')" class="nav-btn bg-white dark:bg-gray-800 px-6 py-2 rounded-full shadow hover:bg-green-50 dark:hover:bg-gray-700 whitespace-nowrap" data-target="tournaments">
+                <i class="fas fa-trophy text-yellow-500 mr-2"></i><span>Tournaments</span>
+            </button>
+            <button onclick="switchView('players')" class="nav-btn bg-white dark:bg-gray-800 px-6 py-2 rounded-full shadow hover:bg-green-50 dark:hover:bg-gray-700 whitespace-nowrap" data-target="players">
+                <i class="fas fa-users text-purple-500 mr-2"></i><span>Player Stats</span>
+            </button>
+            <!-- No Admin Tab -->
+        </div>
+
+        <!-- Live Matches List View -->
+        <div id="liveView" class="view-section">
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-green-500 pl-3">Match Center</h2>
+            <div id="matchesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <div class="text-center py-10 text-gray-500 col-span-full">
+                    <i class="fas fa-spinner fa-spin text-3xl"></i>
+                    <p class="mt-2">Connecting to live feed...</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Player Stats View -->
+        <div id="playersView" class="view-section hidden">
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-purple-500 pl-3">Player Statistics</h2>
+            <!-- Player Search/Filter -->
+            <div class="mb-4">
+                <input type="text" id="playerSearch" onkeyup="filterPlayers()" placeholder="Search player name..." class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none">
+            </div>
+            <div id="playersListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Players will be loaded here -->
+            </div>
+        </div>
+
+        <!-- Tournaments View -->
+        <div id="tournamentsView" class="view-section hidden">
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-yellow-500 pl-3">Tournaments</h2>
+            <div id="tournamentList" class="space-y-4">
+                <p class="text-gray-500 text-center py-8">No active tournaments listed.</p>
+            </div>
+        </div>
+
+        <!-- Match Detail / Scoreboard View -->
+        <div id="matchDetailView" class="view-section hidden">
+            <div class="flex justify-between items-center mb-4">
+                <button onclick="switchView('live')" class="text-sm text-gray-500 hover:text-green-600 flex items-center">
+                    <i class="fas fa-arrow-left mr-1"></i> Back
+                </button>
+                
+                <!-- NEW: Audio Toggle Button -->
+                <button id="audioToggleBtn" onclick="toggleAudio()" class="flex items-center space-x-2 bg-white dark:bg-gray-800 px-3 py-1.5 rounded-full shadow text-sm font-bold text-gray-500 hover:text-green-600 border dark:border-gray-700 transition">
+                    <i class="fas fa-volume-mute text-lg" id="audioIcon"></i>
+                    <span id="audioText">Voice Off</span>
+                    <div id="audioVisualizer" class="audio-wave hidden">
+                        <span></span><span></span><span></span><span></span>
+                    </div>
+                </button>
+            </div>
+            
+            <!-- Main Score Header -->
+            <div class="glass-panel rounded-xl shadow-lg overflow-hidden mb-6 border-t-4 border-cricket-green">
+                <div class="p-4 sm:p-6">
+                    <div class="flex justify-between items-start mb-2">
+                        <span id="matchStatusBadge" class="bg-red-500 text-white text-xs px-2 py-1 rounded-full uppercase tracking-wide font-bold animate-pulse">LIVE</span>
+                        <div class="text-right">
+                             <span id="matchTournamentName" class="text-sm text-gray-500 font-medium block">Tournament Name</span>
+                             <span id="matchHostName" class="text-xs text-gray-400 block mt-0.5"></span>
+                        </div>
+                    </div>
+                    
+                    <div class="flex justify-between items-center mt-4">
+                        <div class="text-center w-1/3">
+                            <h3 id="teamAName" class="font-bold text-lg sm:text-2xl truncate">Team A</h3>
+                            <p id="teamAScore" class="text-xl sm:text-3xl font-mono font-bold text-gray-700 dark:text-gray-200">-/-</p>
+                            <p id="teamAOvers" class="text-sm text-gray-500">0.0 ov</p>
+                        </div>
+                        <div class="text-center w-1/3">
+                            <div class="text-xs text-gray-400 uppercase tracking-widest mb-1">vs</div>
+                            <div id="matchResult" class="text-sm font-medium text-green-600 dark:text-green-400 leading-tight">Match Started</div>
+                        </div>
+                        <div class="text-center w-1/3">
+                            <h3 id="teamBName" class="font-bold text-lg sm:text-2xl truncate">Team B</h3>
+                            <p id="teamBScore" class="text-xl sm:text-3xl font-mono font-bold text-gray-700 dark:text-gray-200">-/-</p>
+                            <p id="teamBOvers" class="text-sm text-gray-500">0.0 ov</p>
+                        </div>
+                    </div>
+                    
+                    <div class="mt-4 pt-4 border-t dark:border-gray-700 text-center text-sm">
+                         <span id="matchCRR" class="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded">CRR: 0.00</span> 
+                         <span id="matchTargetDisplay" class="ml-2 font-bold text-blue-600 hidden">Target: --</span>
+                         <span id="matchEquation" class="ml-2 text-purple-600 font-bold block sm:inline mt-2 sm:mt-0 hidden">Need 0 in 0</span>
+                    </div>
+
+                </div>
+            </div>
+
+            <!-- Scorecard Details -->
+            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                
+                <!-- Full Scorecard Area (Expanded since no admin panel) -->
+                <div class="lg:col-span-3 space-y-6">
+                    
+                    <!-- Recent Balls Timeline -->
+                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 overflow-x-auto">
+                        <h4 class="text-sm font-bold text-gray-500 uppercase mb-3 flex items-center">
+                            <i class="fas fa-history mr-2"></i> Recent Deliveries
+                        </h4>
+                        <div id="recentBallsContainer" class="flex space-x-2 pb-2"></div>
+                   </div>
+
+                    <!-- Tabbed Scorecard Interface -->
+                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
+                        <div class="flex border-b dark:border-gray-700">
+                            <button onclick="switchLiveTab('teamA')" id="live-tab-teamA" class="flex-1 py-3 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 focus:outline-none hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                                Team A
+                            </button>
+                            <button onclick="switchLiveTab('teamB')" id="live-tab-teamB" class="flex-1 py-3 text-sm font-bold text-gray-500 focus:outline-none hover:bg-gray-50 dark:hover:bg-gray-700/50 transition">
+                                Team B
+                            </button>
+                        </div>
+                        
+                        <div class="p-0">
+                            <!-- Team A Content -->
+                            <div id="live-content-teamA" class="w-full">
+                                <!-- Populated by JS -->
+                            </div>
+                            <!-- Team B Content -->
+                            <div id="live-content-teamB" class="w-full hidden">
+                                <!-- Populated by JS -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+    </div>
+
+    <!-- Player Profile Modal (Read Only) -->
+    <div id="playerProfileModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
+        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-80" onclick="closeModal('playerProfileModal')"></div>
+        <div class="modal-container bg-white dark:bg-gray-800 w-11/12 md:max-w-lg mx-auto rounded-xl shadow-2xl z-50 overflow-y-auto max-h-[90vh]">
+            <div class="modal-content text-left">
+                <!-- Header -->
+                <div class="relative bg-gradient-to-r from-purple-600 to-blue-600 h-32 p-6 flex items-end">
+                    <div class="absolute top-4 right-4 text-white cursor-pointer" onclick="closeModal('playerProfileModal')">
+                        <i class="fas fa-times text-xl"></i>
+                    </div>
+                    <div class="translate-y-1/2 flex items-end relative group">
+                        <div class="w-24 h-24 bg-white dark:bg-gray-700 rounded-full border-4 border-white dark:border-gray-800 flex items-center justify-center text-3xl font-bold text-gray-400 shadow-lg overflow-hidden" id="profileAvatar">
+                            P
+                        </div>
+                        <!-- No Edit Button here -->
+                    </div>
+                </div>
+                
+                <!-- Body -->
+                <div class="pt-16 px-6 pb-6">
+                    <div class="mb-4">
+                        <h2 id="profileName" class="text-3xl font-bold text-gray-800 dark:text-white leading-none">Player Name</h2>
+                        <span id="profileUniqueId" class="text-xs text-gray-400 font-mono mt-1 block tracking-wider">ID: --</span>
+                    </div>
+
+                    <p class="text-sm text-gray-500 mb-6 font-bold uppercase tracking-wide">Career Statistics</p>
+
+                    <div class="grid grid-cols-2 gap-4 text-center">
+                        <!-- Batting Stats -->
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border dark:border-gray-700 col-span-2 sm:col-span-1 shadow-sm">
+                            <h4 class="text-purple-600 font-bold mb-3 border-b pb-1 flex justify-center items-center"><i class="fas fa-baseball-bat-ball mr-2"></i> BATTING</h4>
+                            <div class="grid grid-cols-2 gap-y-3 text-sm">
+                                <div class="text-gray-500 text-left pl-2">Matches</div>
+                                <div id="profMatches" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">Runs</div>
+                                <div id="profRuns" class="font-bold text-xl text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">Balls</div>
+                                <div id="profBalls" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">Highest</div>
+                                <div id="profHS" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">Strike Rate</div>
+                                <div id="profSR" class="font-bold text-green-600 text-right pr-2">0.00</div>
+                                <div class="text-gray-500 text-left pl-2">4s / 6s</div>
+                                <div id="profBoundaries" class="font-bold text-right pr-2">0 / 0</div>
+                            </div>
+                        </div>
+
+                        <!-- Bowling Stats -->
+                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border dark:border-gray-700 col-span-2 sm:col-span-1 shadow-sm">
+                            <h4 class="text-blue-600 font-bold mb-3 border-b pb-1 flex justify-center items-center"><i class="fas fa-bullseye mr-2"></i> BOWLING</h4>
+                            <div class="grid grid-cols-2 gap-y-3 text-sm">
+                                <div class="text-gray-500 text-left pl-2">Innings</div>
+                                <div id="profBowlInns" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">Wickets</div>
+                                <div id="profWickets" class="font-bold text-xl text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">Overs</div>
+                                <div id="profOvers" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">Runs Given</div>
+                                <div id="profRunsConceded" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">Economy</div>
+                                <div id="profEco" class="font-bold text-red-500 text-right pr-2">0.00</div>
+                                <div class="text-gray-500 text-left pl-2">Best</div>
+                                <div id="profBestBowl" class="font-bold text-right pr-2">-/-</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, collection, doc, getDoc, onSnapshot, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // ==========================================
+        // CONFIG & INIT
+        // ==========================================
+        
+        const firebaseConfig = {
+          apiKey: "AIzaSyDUP-ot4yX5Bg3GNpfDrZ6NOL8c5YFdoyo",
+          authDomain: "live-score-49270.firebaseapp.com",
+          databaseURL: "https://live-score-49270-default-rtdb.firebaseio.com",
+          projectId: "live-score-49270",
+          storageBucket: "live-score-49270.firebasestorage.app",
+          messagingSenderId: "992482589674",
+          appId: "1:992482589674:web:11d1e85f7c5473ed841093"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+        const appId = 'cricket-app-v1';
+        
+        let currentMatchId = null; 
+        let currentMatchUnsubscribe = null;
+        let matchesListUnsubscribe = null; 
+        let currentMatchData = null; 
+        let currentMatchState = null; 
+        let matchTimerInterval = null; 
+        
+        // Audio Variables
+        let isAudioEnabled = false;
+        let lastProcessedBallId = 0;
+        const synth = window.speechSynthesis;
+
+        const getCollPath = (name) => `artifacts/${appId}/public/data/${name}`; 
+
+        // ==========================================
+        // INITIALIZATION LOGIC
+        // ==========================================
+
+        async function initApp() {
+            const loader = document.getElementById('globalLoader');
+            try {
+                // Anonymous sign-in for public read access
+                await signInAnonymously(auth);
+                
+                // Initialize View
+                switchView('live');
+                
+                // Hide Loader
+                loader.style.opacity = '0';
+                setTimeout(() => loader.style.display = 'none', 500);
+            } catch (error) {
+                console.error("Initialization Error:", error);
+                loader.innerHTML = `<p class="text-red-500">Failed to connect to Live Server.<br>${error.message}</p>`;
+            }
+        }
+
+        // Start App
+        initApp();
+
+        // ==========================================
+        // AUDIO COMMENTARY LOGIC
+        // ==========================================
+
+        window.toggleAudio = () => {
+            isAudioEnabled = !isAudioEnabled;
+            const btn = document.getElementById('audioToggleBtn');
+            const icon = document.getElementById('audioIcon');
+            const text = document.getElementById('audioText');
+            const wave = document.getElementById('audioVisualizer');
+
+            if(isAudioEnabled) {
+                icon.className = "fas fa-volume-up text-green-600 text-lg";
+                text.innerText = "Voice On";
+                btn.classList.add('border-green-500');
+                if(synth.speaking) wave.classList.remove('hidden');
+                
+                // Test speech
+                speakCommentary("ভয়েস কমেট্রি চালু হয়েছে");
+            } else {
+                icon.className = "fas fa-volume-mute text-lg";
+                text.innerText = "Voice Off";
+                btn.classList.remove('border-green-500');
+                wave.classList.add('hidden');
+                synth.cancel();
+            }
+        };
+
+        function speakCommentary(text) {
+            if(!isAudioEnabled || !text) return;
+
+            const utterance = new SpeechSynthesisUtterance(text);
+            utterance.lang = 'bn-BD'; // Try Bengali
+            utterance.rate = 1.0;
+            utterance.pitch = 1.0;
+
+            const wave = document.getElementById('audioVisualizer');
+            
+            utterance.onstart = () => {
+                if(isAudioEnabled) wave.classList.remove('hidden');
+            };
+            
+            utterance.onend = () => {
+                wave.classList.add('hidden');
+            };
+
+            synth.cancel(); // Stop previous
+            synth.speak(utterance);
+        }
+
+        function processNewBallForAudio(ball, matchData) {
+            // Avoid speaking old balls when loading
+            if (ball.id <= lastProcessedBallId) return;
+            lastProcessedBallId = ball.id;
+
+            let commentary = "";
+            const bowler = ball.bowlerName || "বোলার";
+            const batter = ball.strikerName || "ব্যাটার";
+
+            if (ball.isWicket) {
+                commentary = `উইকেট! ${batter} আউট হয়ে ফিরে যাচ্ছেন।`;
+                if(ball.wicketType === 'bowled') commentary += ` বোল্ড আউট করলেন ${bowler}।`;
+                else if(ball.wicketType === 'caught') commentary += ` ক্যাচ আউট হলেন।`;
+                else if(ball.wicketType === 'runout') commentary = `ரன் আউট! ${batter} রান আউট হলেন।`;
+            } else if (ball.runs === 4) {
+                commentary = `চমৎকার শট! চার রান পেলেন ${batter}।`;
+            } else if (ball.runs === 6) {
+                commentary = `বিশাল ছক্কা! বল সীমানার বাইরে। ছয় রান।`;
+            } else if (ball.extrasType) {
+                 if(ball.extrasType === 'WD') commentary = `ওয়াইড বল। অতিরিক্ত এক রান।`;
+                 else if(ball.extrasType === 'NB') commentary = `নো বল! ফ্রি হিট পাবে ব্যাটিং দল।`;
+                 else if(ball.extrasType === 'LB') commentary = `লেগ বাই থেকে রান।`;
+                 else if(ball.extrasType === 'BY') commentary = `বাই রান।`;
+            } else if (ball.runs === 0) {
+                commentary = `ডট বল। কোনো রান হলো না।`;
+            } else if (ball.runs === 1) {
+                commentary = `এক রান নিলেন।`;
+            } else if (ball.runs === 2) {
+                commentary = `দ্রুত দুই রান নিলেন।`;
+            } else {
+                commentary = `${ball.runs} রান।`;
+            }
+
+            speakCommentary(commentary);
+        }
+
+        // ==========================================
+        // STATE & LOGIC ENGINE (READ ONLY)
+        // ==========================================
+        
+        function calculateMatchState(matchData) {
+            const state = {
+                innings: {
+                    1: { runs: 0, wickets: 0, overs: 0, balls: 0, extras: 0 },
+                    2: { runs: 0, wickets: 0, overs: 0, balls: 0, extras: 0 }
+                },
+                currentInnings: matchData.currentInnings || 1,
+                batsmen: {}, 
+                bowlers: {}, 
+                strikerId: matchData.currentStrikerId,
+                nonStrikerId: matchData.currentNonStrikerId,
+                currentBowlerId: matchData.currentBowlerId,
+                timeline: [],
+                dismissedPlayers: []
+            };
+
+            const history = matchData.history || [];
+            
+            // Audio Trigger Logic
+            if (history.length > 0) {
+                const latestBall = history[history.length - 1];
+                // Check if this is a newly added ball we haven't processed for audio yet
+                // We do this check AFTER the page is loaded and user enables audio
+                if(currentMatchData) { // ensuring it's not the first load
+                    processNewBallForAudio(latestBall, matchData);
+                } else {
+                    // First load, just set the ID without speaking
+                    lastProcessedBallId = latestBall.id;
+                }
+            }
+
+            history.forEach(ball => {
+                const inn = ball.innings;
+                const s = state.innings[inn];
+                if (!s) return;
+                
+                if(!state.batsmen[ball.strikerId]) state.batsmen[ball.strikerId] = { runs:0, balls:0, fours:0, sixes:0, out: null, name: ball.strikerName };
+                if(!state.batsmen[ball.nonStrikerId]) state.batsmen[ball.nonStrikerId] = { runs:0, balls:0, fours:0, sixes:0, out: null, name: ball.nonStrikerName };
+                if(!state.bowlers[ball.bowlerId]) state.bowlers[ball.bowlerId] = { balls:0, runs:0, wickets:0, maidens:0, name: ball.bowlerName };
+                
+                const striker = state.batsmen[ball.strikerId];
+                const bowler = state.bowlers[ball.bowlerId];
+                
+                let totalRunsForBall = ball.runs;
+                let batRuns = ball.runs;
+                let isLegalDelivery = true;
+
+                if (ball.extrasType) {
+                    s.extras += (ball.extrasRuns || 1) + ball.runs; 
+                    totalRunsForBall += (ball.extrasRuns || 0); 
+                    
+                    if (ball.extrasType === 'WD' || ball.extrasType === 'NB') {
+                        isLegalDelivery = false;
+                        if(ball.extrasType !== 'NB') batRuns = 0; 
+                        if(ball.extrasType === 'NB') batRuns = ball.runs; 
+                    } else {
+                        batRuns = 0; 
+                    }
+                    if(bowler) {
+                        bowler.runs += totalRunsForBall; 
+                        if (ball.extrasType === 'BY' || ball.extrasType === 'LB') {
+                            bowler.runs -= totalRunsForBall; 
+                        }
+                    }
+                } else {
+                    if(bowler) bowler.runs += ball.runs;
+                }
+
+                if(striker) striker.runs += batRuns;
+                
+                if (isLegalDelivery) {
+                    if(striker) striker.balls++;
+                    if(bowler) bowler.balls++;
+                }
+                
+                if (batRuns === 4 && striker) striker.fours++;
+                if (batRuns === 6 && striker) striker.sixes++;
+
+                if (ball.isWicket) {
+                    s.wickets++;
+                    if (ball.wicketType !== 'runout' && bowler) {
+                        bowler.wickets++;
+                    }
+                    const victimId = ball.wicketVictimId || ball.strikerId;
+                    state.dismissedPlayers.push(victimId);
+                    if(state.batsmen[victimId]) state.batsmen[victimId].out = ball.wicketType;
+                }
+
+                s.runs += totalRunsForBall;
+
+                if (isLegalDelivery) {
+                    s.balls++;
+                    if (s.balls % 6 === 0) {
+                        s.overs++;
+                        s.balls = 0;
+                    }
+                }
+                
+                state.timeline.unshift(ball); 
+            });
+
+            state.innings[1].displayOvers = `${state.innings[1].overs}.${state.innings[1].balls}`;
+            state.innings[2].displayOvers = `${state.innings[2].overs}.${state.innings[2].balls}`;
+
+            return state;
+        }
+
+        // ==========================================
+        // UI FUNCTIONS
+        // ==========================================
+        
+        window.switchView = (viewName) => {
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            document.getElementById(`${viewName}View`).classList.remove('hidden');
+            
+            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav-btn', 'bg-green-100', 'dark:bg-green-900'));
+            const activeBtn = document.querySelector(`.nav-btn[data-target="${viewName}"]`);
+            if(activeBtn) activeBtn.classList.add('active-nav-btn', 'bg-green-100', 'dark:bg-green-900');
+
+            if(viewName === 'live') loadMatches();
+            // Tournaments loading logic could be added here
+            if(viewName === 'players') loadAllPlayers();
+        };
+
+        function renderMatchCard(match) {
+            const isLive = match.status === 'live';
+            const createdBy = match.createdByName ? `<small class="text-xs text-gray-400 mt-1 block"><i class="fas fa-user-tag mr-1"></i>Host: ${match.createdByName}</small>` : '';
+
+            let timeDisplay = "";
+            
+            if (isLive && match.createdAt) {
+                const startMs = match.createdAt.toDate ? match.createdAt.toDate().getTime() : Date.now();
+                timeDisplay = `<div class="text-xs text-green-600 font-mono mt-2 flex items-center justify-center bg-green-50 dark:bg-green-900/20 py-1 rounded"><i class="fas fa-clock mr-1"></i>Running: <span class="live-match-timer font-bold" data-start="${startMs}">00:00:00</span></div>`;
+            } else if (match.status === 'completed' && match.createdAt && match.endedAt) {
+                const start = match.createdAt.toDate ? match.createdAt.toDate() : new Date(match.createdAt);
+                const end = match.endedAt.toDate ? match.endedAt.toDate() : new Date(match.endedAt);
+                const diff = end - start;
+                timeDisplay = `<div class="text-xs text-gray-500 font-mono mt-2 flex items-center justify-center bg-gray-50 dark:bg-gray-700/30 py-1 rounded"><i class="fas fa-history mr-1"></i>Duration: ${formatDuration(diff)}</div>`;
+            }
+
+            return `
+                <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition overflow-hidden border-l-4 ${isLive ? 'border-red-500' : 'border-gray-300'}">
+                    <div class="p-4 cursor-pointer" onclick="openMatch('${match.id}')">
+                        <div class="flex justify-between items-center mb-2">
+                            <span class="text-xs font-bold uppercase text-gray-400">${match.tournamentName || 'Friendly'}</span>
+                            ${isLive ? '<span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold animate-pulse">LIVE</span>' : ''}
+                        </div>
+                        <div class="flex justify-between items-center">
+                            <div>
+                                <h3 class="font-bold text-lg">${match.teamAName}</h3>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">${match.score?.teamA || '0/0'}</p>
+                            </div>
+                            <span class="text-gray-300 font-bold text-xl">VS</span>
+                            <div class="text-right">
+                                <h3 class="font-bold text-lg">${match.teamBName}</h3>
+                                <p class="text-gray-600 dark:text-gray-400 text-sm">${match.score?.teamB || '0/0'}</p>
+                            </div>
+                        </div>
+                        
+                        ${timeDisplay}
+
+                        <div class="mt-2 pt-2 border-t dark:border-gray-700">
+                             <div class="text-xs text-gray-500 text-center flex items-center justify-center text-blue-500">
+                                ${match.status === 'completed' ? `<span class="text-green-600 font-bold">${match.result || 'Match Completed'}</span>` : '<i class="fas fa-eye mr-1"></i> Watch Live Scoreboard'}
+                             </div>
+                        </div>
+                    </div>
+                </div>
+            `;
+        }
+
+        function loadMatches() {
+            if (matchesListUnsubscribe) {
+                matchesListUnsubscribe(); 
+            }
+            if(matchTimerInterval) clearInterval(matchTimerInterval);
+
+            const list = document.getElementById('matchesList');
+            const q = query(collection(db, getCollPath('matches')), orderBy('createdAt', 'desc'));
+            
+            list.innerHTML = `
+                <div class="text-center py-10 text-gray-500 col-span-full">
+                    <i class="fas fa-spinner fa-spin text-3xl"></i>
+                    <p class="mt-2">Fetching live matches...</p>
+                </div>
+            `;
+
+            matchesListUnsubscribe = onSnapshot(q, (snapshot) => {
+                if(matchTimerInterval) clearInterval(matchTimerInterval);
+
+                list.innerHTML = '';
+                if(snapshot.empty) {
+                    list.innerHTML = '<div class="col-span-full text-center py-10"><i class="fas fa-baseball-bat-ball text-4xl text-gray-300 mb-3"></i><p class="text-gray-500">No active matches found at the moment.</p></div>';
+                    return;
+                }
+
+                const groupedMatches = {};
+                
+                snapshot.forEach(doc => {
+                    const match = {id: doc.id, ...doc.data()};
+                    let dateStr = "Unknown Date";
+                    if(match.createdAt) {
+                        const dateObj = match.createdAt.toDate ? match.createdAt.toDate() : new Date(match.createdAt);
+                        dateStr = dateObj.toLocaleDateString('en-US', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' });
+                    }
+                    if(!groupedMatches[dateStr]) groupedMatches[dateStr] = [];
+                    groupedMatches[dateStr].push(match);
+                });
+
+                Object.keys(groupedMatches).forEach(date => {
+                    list.innerHTML += `
+                        <div class="col-span-full mt-2 mb-1">
+                            <h3 class="text-gray-500 dark:text-gray-400 font-bold border-b dark:border-gray-700 pb-1 flex items-center text-sm uppercase tracking-wider">
+                                <i class="fas fa-calendar-alt mr-2"></i> ${date}
+                            </h3>
+                        </div>
+                    `;
+                    groupedMatches[date].forEach(match => {
+                        list.innerHTML += renderMatchCard(match);
+                    });
+                });
+
+                startMatchTimers();
+
+            }, (error) => {
+                console.error("Matches Listener Error:", error);
+                list.innerHTML = `<p class="col-span-full text-center text-red-500">Unable to load matches. Please check your internet connection.</p>`;
+            });
+        }
+        
+        function startMatchTimers() {
+            const updateTimers = () => {
+                const now = Date.now();
+                document.querySelectorAll('.live-match-timer').forEach(el => {
+                    const start = parseInt(el.getAttribute('data-start'));
+                    if(!isNaN(start)) {
+                        const diff = now - start;
+                        el.innerText = formatDuration(diff);
+                    }
+                });
+            };
+
+            updateTimers(); 
+            matchTimerInterval = setInterval(updateTimers, 1000);
+        }
+
+        function formatDuration(ms) {
+            if(ms < 0) ms = 0;
+            const seconds = Math.floor((ms / 1000) % 60);
+            const minutes = Math.floor((ms / (1000 * 60)) % 60);
+            const hours = Math.floor((ms / (1000 * 60 * 60)));
+
+            const pad = (num) => num.toString().padStart(2, '0');
+            return `${pad(hours)}:${pad(minutes)}:${pad(seconds)}`;
+        }
+
+        window.openMatch = (matchId) => {
+            currentMatchId = matchId;
+            currentMatchData = null; // Reset
+            lastProcessedBallId = 0; // Reset audio processing
+            
+            switchView('matchDetail');
+            
+            if(currentMatchUnsubscribe) currentMatchUnsubscribe();
+            
+            currentMatchUnsubscribe = onSnapshot(doc(db, getCollPath('matches'), matchId), (docSnap) => {
+                if (docSnap.exists()) {
+                    const freshData = docSnap.data();
+                    currentMatchState = calculateMatchState(freshData); // This triggers audio inside
+                    currentMatchData = freshData; // Update main data ref
+                    renderScoreboard(freshData, currentMatchState);
+                } else {
+                    alert("Match not found (might have been removed)");
+                    switchView('live');
+                }
+            });
+        };
+
+        window.switchLiveTab = (team) => {
+            const tabA = document.getElementById('live-tab-teamA');
+            const tabB = document.getElementById('live-tab-teamB');
+            const contentA = document.getElementById('live-content-teamA');
+            const contentB = document.getElementById('live-content-teamB');
+
+            if(team === 'teamA') {
+                tabA.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
+                tabA.classList.remove('text-gray-500');
+                tabB.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
+                tabB.classList.add('text-gray-500');
+                contentA.classList.remove('hidden');
+                contentB.classList.add('hidden');
+            } else {
+                tabB.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600');
+                tabB.classList.remove('text-gray-500');
+                tabA.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600');
+                tabA.classList.add('text-gray-500');
+                contentB.classList.remove('hidden');
+                contentA.classList.add('hidden');
+            }
+        };
+
+        function renderScoreboard(match, state) {
+            const inn = state.currentInnings;
+            const innData = state.innings[inn];
+
+            document.getElementById('teamAName').innerText = match.teamAName;
+            document.getElementById('teamBName').innerText = match.teamBName;
+            document.getElementById('live-tab-teamA').innerText = match.teamAName;
+            document.getElementById('live-tab-teamB').innerText = match.teamBName;
+
+            document.getElementById('matchTournamentName').innerText = (match.type || 'Match') + ' • ' + (match.tournamentName || 'Friendly');
+            document.getElementById('matchHostName').innerText = match.createdByName ? `Hosted by ${match.createdByName}` : '';
+            document.getElementById('matchResult').innerText = match.result || (match.status === 'live' ? 'Match In Progress' : 'Match Completed');
+            
+            document.getElementById('teamAScore').innerText = `${state.innings[1].runs}/${state.innings[1].wickets}`;
+            document.getElementById('teamAOvers').innerText = `(${state.innings[1].displayOvers})`;
+            
+            if (match.currentInnings === 2 || match.status === 'completed') {
+                document.getElementById('teamBScore').innerText = `${state.innings[2].runs}/${state.innings[2].wickets}`;
+                document.getElementById('teamBOvers').innerText = `(${state.innings[2].displayOvers})`;
+            } else {
+                 document.getElementById('teamBScore').innerText = "Yet to Bat";
+                 document.getElementById('teamBOvers').innerText = "";
+            }
+
+            renderLiveFullScorecard(match, state);
+            
+            const timeline = document.getElementById('recentBallsContainer');
+            timeline.innerHTML = '';
+            state.timeline.slice(0, 18).forEach(b => {
+                let color = 'bg-gray-200 dark:bg-gray-700';
+                let txt = b.runs;
+                if(b.isWicket) { color = 'bg-red-500 text-white'; txt='W'; }
+                else if(b.runs === 4) { color = 'bg-blue-500 text-white'; }
+                else if(b.runs === 6) { color = 'bg-green-500 text-white'; }
+                else if(b.extrasType) { color = 'bg-yellow-200 dark:bg-yellow-800'; txt=b.extrasType; }
+                
+                timeline.innerHTML += `<div class="${color} score-ball shadow-sm flex-shrink-0 text-xs">${txt}</div>`;
+            });
+            
+            const crr = (innData.runs / (innData.overs + (innData.balls/6)) || 0).toFixed(2);
+            document.getElementById('matchCRR').innerText = `CRR: ${crr}`;
+
+            if (inn === 2 || match.status === 'completed') {
+                const target = state.innings[1].runs + 1;
+                document.getElementById('matchTargetDisplay').innerText = `Target: ${target}`;
+                document.getElementById('matchTargetDisplay').classList.remove('hidden');
+                
+                if (match.status === 'live') {
+                    const runsNeed = Math.max(0, target - state.innings[2].runs);
+                    const ballsRem = (match.oversLimit * 6) - (state.innings[2].overs * 6 + state.innings[2].balls);
+                    document.getElementById('matchEquation').innerText = `Need ${runsNeed} runs in ${ballsRem} balls`;
+                    document.getElementById('matchEquation').classList.remove('hidden');
+                } else {
+                    document.getElementById('matchEquation').classList.add('hidden');
+                }
+            } else {
+                document.getElementById('matchTargetDisplay').classList.add('hidden');
+                document.getElementById('matchEquation').classList.add('hidden');
+            }
+        }
+
+        function renderLiveFullScorecard(match, state) {
+            const renderSquadTable = (squad, elementId) => {
+                const container = document.getElementById(elementId);
+                if(!squad) {
+                    container.innerHTML = '<p class="p-4 text-center text-gray-500">Squad not available</p>';
+                    return;
+                }
+
+                let batHtml = `
+                    <div class="mb-4">
+                        <h5 class="bg-gray-100 dark:bg-gray-700 p-2 text-xs font-bold uppercase text-gray-500">Batting</h5>
+                        <table class="w-full text-sm">
+                            <thead class="text-xs text-gray-400 border-b dark:border-gray-700">
+                                <tr>
+                                    <th class="text-left py-2 px-3">Batter</th>
+                                    <th class="text-right py-2 px-2">R</th>
+                                    <th class="text-right py-2 px-2">B</th>
+                                    <th class="text-right py-2 px-2 hidden sm:table-cell">4s</th>
+                                    <th class="text-right py-2 px-2 hidden sm:table-cell">6s</th>
+                                    <th class="text-right py-2 px-2">SR</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                const activeStriker = match.currentStrikerId;
+                const activeNonStriker = match.currentNonStrikerId;
+
+                squad.forEach(p => {
+                    const stats = state.batsmen[p.id];
+                    let rowClass = "border-b dark:border-gray-700";
+                    let nameDisplay = p.name;
+                    let runs = "-", balls = "-", fours = "-", sixes = "-", sr = "-";
+                    let status = "";
+
+                    if (stats) {
+                        runs = stats.runs;
+                        balls = stats.balls;
+                        fours = stats.fours;
+                        sixes = stats.sixes;
+                        sr = stats.balls > 0 ? ((stats.runs/stats.balls)*100).toFixed(0) : "0";
+                        
+                        if (stats.out) {
+                            status = `<span class="text-red-500 text-xs ml-2">(${stats.out})</span>`;
+                            rowClass += " bg-red-50/10 dark:bg-red-900/5";
+                        } else if (p.id === activeStriker || p.id === activeNonStriker) {
+                            status = `<span class="text-green-600 text-xs ml-2 font-bold animate-pulse">● Batting</span>`;
+                            rowClass += " bg-green-50 dark:bg-green-900/10";
+                            if(p.id === activeStriker) nameDisplay += " *";
+                        } else {
+                            status = `<span class="text-gray-400 text-xs ml-2">not out</span>`;
+                        }
+                    } else {
+                        status = `<span class="text-gray-300 text-xs ml-2">did not bat</span>`;
+                    }
+
+                    if(stats || p.id === activeStriker || p.id === activeNonStriker) {
+                        batHtml += `
+                            <tr class="${rowClass}">
+                                <td class="py-2 px-3">
+                                    <div class="font-medium text-gray-800 dark:text-gray-200">${nameDisplay} ${status}</div>
+                                </td>
+                                <td class="text-right font-bold px-2">${runs}</td>
+                                <td class="text-right text-gray-500 px-2">${balls}</td>
+                                <td class="text-right text-gray-400 px-2 hidden sm:table-cell">${fours}</td>
+                                <td class="text-right text-gray-400 px-2 hidden sm:table-cell">${sixes}</td>
+                                <td class="text-right text-xs text-gray-500 px-2">${sr}</td>
+                            </tr>
+                        `;
+                    }
+                });
+                batHtml += `</tbody></table></div>`;
+
+                let bowlHtml = `
+                    <div class="mb-2">
+                        <h5 class="bg-gray-100 dark:bg-gray-700 p-2 text-xs font-bold uppercase text-gray-500">Bowling</h5>
+                        <table class="w-full text-sm">
+                            <thead class="text-xs text-gray-400 border-b dark:border-gray-700">
+                                <tr>
+                                    <th class="text-left py-2 px-3">Bowler</th>
+                                    <th class="text-right py-2 px-2">O</th>
+                                    <th class="text-right py-2 px-2">M</th>
+                                    <th class="text-right py-2 px-2">R</th>
+                                    <th class="text-right py-2 px-2">W</th>
+                                    <th class="text-right py-2 px-2">Eco</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                `;
+
+                let bowlerFound = false;
+                squad.forEach(p => {
+                    const stats = state.bowlers[p.id];
+                    if(stats) {
+                        bowlerFound = true;
+                        const overs = Math.floor(stats.balls/6) + '.' + (stats.balls%6);
+                        const eco = stats.balls > 0 ? ((stats.runs/stats.balls)*6).toFixed(1) : "0.0";
+                        const isCurrent = (match.currentBowlerId === p.id);
+                        
+                        bowlHtml += `
+                            <tr class="border-b dark:border-gray-700 ${isCurrent ? 'bg-blue-50 dark:bg-blue-900/10' : ''}">
+                                <td class="py-2 px-3 font-medium ${isCurrent ? 'text-blue-700 dark:text-blue-300' : ''}">${p.name} ${isCurrent ? '<span class="text-xs ml-1">●</span>' : ''}</td>
+                                <td class="text-right px-2">${overs}</td>
+                                <td class="text-right px-2 text-gray-400">${stats.maidens}</td>
+                                <td class="text-right px-2">${stats.runs}</td>
+                                <td class="text-right px-2 font-bold text-red-600">${stats.wickets}</td>
+                                <td class="text-right px-2 text-xs text-gray-500">${eco}</td>
+                            </tr>
+                        `;
+                    }
+                });
+
+                if(!bowlerFound) bowlHtml += `<tr><td colspan="6" class="text-center py-2 text-gray-400 text-xs">No bowling stats yet</td></tr>`;
+                bowlHtml += `</tbody></table></div>`;
+
+                container.innerHTML = batHtml + bowlHtml;
+            };
+
+            renderSquadTable(match.squadA, 'live-content-teamA');
+            renderSquadTable(match.squadB, 'live-content-teamB');
+        }
+
+        window.loadAllPlayers = async () => {
+            const list = document.getElementById('playersListContainer');
+            list.innerHTML = '<div class="col-span-full text-center"><i class="fas fa-spinner fa-spin text-2xl"></i> Loading stats...</div>';
+            
+            try {
+                const q = query(collection(db, getCollPath('players')), orderBy('totalRuns', 'desc'));
+                const querySnapshot = await getDocs(q);
+                
+                list.innerHTML = '';
+                
+                if(querySnapshot.empty) {
+                    list.innerHTML = '<div class="col-span-full text-center text-gray-500">No player statistics available.</div>';
+                    return;
+                }
+
+                window.allPlayersData = {};
+
+                querySnapshot.forEach((doc) => {
+                    const p = doc.data();
+                    window.allPlayersData[doc.id] = p;
+
+                    const avatarHtml = p.imageUrl 
+                        ? `<img src="${p.imageUrl}" class="w-12 h-12 rounded-full object-cover border-2 border-purple-500 bg-white" alt="${p.name}">`
+                        : `<div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center font-bold text-lg text-purple-600">${p.name.charAt(0).toUpperCase()}</div>`;
+
+                    list.innerHTML += `
+                        <div class="player-card bg-white dark:bg-gray-800 p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer border-t-4 border-purple-500" onclick="openPlayerProfile('${doc.id}')">
+                            <div class="flex items-center space-x-4">
+                                ${avatarHtml}
+                                <div>
+                                    <h3 class="font-bold text-lg leading-tight player-name">${p.name}</h3>
+                                    <div class="text-xs text-gray-500 mt-1">
+                                        <span class="mr-2"><i class="fas fa-baseball-bat-ball text-gray-400"></i> ${p.totalRuns || 0} Runs</span>
+                                        <span><i class="fas fa-bullseye text-gray-400"></i> ${p.totalWickets || 0} Wkts</span>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    `;
+                });
+
+            } catch(e) {
+                console.error(e);
+                list.innerHTML = '<p class="text-red-500 text-center col-span-full">Unable to load player data.</p>';
+            }
+        };
+
+        window.filterPlayers = () => {
+            const input = document.getElementById('playerSearch').value.toLowerCase();
+            const cards = document.getElementsByClassName('player-card');
+            
+            Array.from(cards).forEach(card => {
+                const name = card.querySelector('.player-name').innerText.toLowerCase();
+                if(name.includes(input)) card.style.display = "";
+                else card.style.display = "none";
+            });
+        };
+
+        window.openPlayerProfile = (id) => {
+            const p = window.allPlayersData[id];
+            if(!p) return;
+
+            document.getElementById('profileName').innerText = p.name;
+            document.getElementById('profileUniqueId').innerText = `ID: ${id}`;
+            
+            const avatarEl = document.getElementById('profileAvatar');
+            
+            if(p.imageUrl) {
+                avatarEl.innerHTML = `<img src="${p.imageUrl}" class="w-full h-full object-cover">`;
+                avatarEl.className = "w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden bg-white";
+            } else {
+                avatarEl.innerHTML = p.name.charAt(0).toUpperCase();
+                avatarEl.className = "w-24 h-24 bg-white dark:bg-gray-700 rounded-full border-4 border-white dark:border-gray-800 flex items-center justify-center text-3xl font-bold text-gray-400 shadow-lg overflow-hidden";
+            }
+
+            document.getElementById('profMatches').innerText = p.totalMatches || 0;
+            document.getElementById('profRuns').innerText = p.totalRuns || 0;
+            document.getElementById('profBalls').innerText = p.totalBalls || 0;
+            const sr = p.totalBalls > 0 ? ((p.totalRuns / p.totalBalls) * 100).toFixed(2) : '0.00';
+            document.getElementById('profSR').innerText = sr;
+            document.getElementById('profBoundaries').innerText = `${p.totalFours || 0} / ${p.totalSixes || 0}`;
+            
+            document.getElementById('profBowlInns').innerText = p.bowlInnings || 0;
+            document.getElementById('profWickets').innerText = p.totalWickets || 0;
+            
+            const totalBalls = p.totalOversBalls || 0;
+            const overs = Math.floor(totalBalls / 6);
+            const remBalls = totalBalls % 6;
+            document.getElementById('profOvers').innerText = `${overs}.${remBalls}`;
+            
+            document.getElementById('profRunsConceded').innerText = p.totalRunsConceded || 0;
+            
+            const eco = totalBalls > 0 ? ((p.totalRunsConceded / totalBalls) * 6).toFixed(2) : '0.00';
+            document.getElementById('profEco').innerText = eco;
+
+            const modal = document.getElementById('playerProfileModal');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            document.body.classList.add('modal-active');
+        };
+
+        window.closeModal = (modalId) => {
+            const modal = document.getElementById(modalId);
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            document.body.classList.remove('modal-active');
+        };
+
+        document.getElementById('themeToggle').addEventListener('click', () => {
+            document.documentElement.classList.toggle('dark');
+        });
+
+    </script>
+</body>
+</html>
