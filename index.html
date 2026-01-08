@@ -380,6 +380,7 @@
         // Audio Variables
         let isAudioEnabled = false;
         let lastProcessedBallId = 0;
+        let preferredVoice = null;
         const synth = window.speechSynthesis;
 
         const getCollPath = (name) => `artifacts/${appId}/public/data/${name}`; 
@@ -397,6 +398,12 @@
                 // Initialize View
                 switchView('live');
                 
+                // Pre-load voices
+                loadVoices();
+                if (speechSynthesis.onvoiceschanged !== undefined) {
+                    speechSynthesis.onvoiceschanged = loadVoices;
+                }
+                
                 // Hide Loader
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 500);
@@ -413,6 +420,23 @@
         // AUDIO COMMENTARY LOGIC
         // ==========================================
 
+        function loadVoices() {
+            const voices = synth.getVoices();
+            // Try to find a Bengali voice
+            preferredVoice = voices.find(voice => 
+                voice.lang === 'bn-BD' || 
+                voice.lang === 'bn-IN' || 
+                voice.lang.includes('bn')
+            );
+
+            // Fallback to Hindi or default if Bengali not found (better than silence)
+            if (!preferredVoice) {
+                preferredVoice = voices.find(voice => voice.lang === 'hi-IN') || null;
+            }
+            
+            console.log("Voice loaded:", preferredVoice ? preferredVoice.name : "Default");
+        }
+
         window.toggleAudio = () => {
             isAudioEnabled = !isAudioEnabled;
             const btn = document.getElementById('audioToggleBtn');
@@ -425,6 +449,9 @@
                 text.innerText = "Voice On";
                 btn.classList.add('border-green-500');
                 if(synth.speaking) wave.classList.remove('hidden');
+                
+                // Ensure voices are loaded
+                if(!preferredVoice) loadVoices();
                 
                 // Test speech
                 speakCommentary("ভয়েস কমেট্রি চালু হয়েছে");
@@ -440,10 +467,20 @@
         function speakCommentary(text) {
             if(!isAudioEnabled || !text) return;
 
+            // Cancel any current speech to speak the new update immediately
+            synth.cancel();
+
             const utterance = new SpeechSynthesisUtterance(text);
-            utterance.lang = 'bn-BD'; // Try Bengali
+            
+            if (preferredVoice) {
+                utterance.voice = preferredVoice;
+            }
+            
+            // Set lang anyway as backup
+            utterance.lang = 'bn-BD'; 
             utterance.rate = 1.0;
             utterance.pitch = 1.0;
+            utterance.volume = 1.0;
 
             const wave = document.getElementById('audioVisualizer');
             
@@ -454,8 +491,12 @@
             utterance.onend = () => {
                 wave.classList.add('hidden');
             };
+            
+            utterance.onerror = (e) => {
+                console.error("Speech Error", e);
+                wave.classList.add('hidden');
+            };
 
-            synth.cancel(); // Stop previous
             synth.speak(utterance);
         }
 
@@ -472,7 +513,7 @@
                 commentary = `উইকেট! ${batter} আউট হয়ে ফিরে যাচ্ছেন।`;
                 if(ball.wicketType === 'bowled') commentary += ` বোল্ড আউট করলেন ${bowler}।`;
                 else if(ball.wicketType === 'caught') commentary += ` ক্যাচ আউট হলেন।`;
-                else if(ball.wicketType === 'runout') commentary = `ரன் আউট! ${batter} রান আউট হলেন।`;
+                else if(ball.wicketType === 'runout') commentary = `রান আউট! ${batter} রান আউট হলেন।`;
             } else if (ball.runs === 4) {
                 commentary = `চমৎকার শট! চার রান পেলেন ${batter}।`;
             } else if (ball.runs === 6) {
