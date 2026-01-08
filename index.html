@@ -422,19 +422,21 @@
 
         function loadVoices() {
             const voices = synth.getVoices();
-            // Try to find a Bengali voice
+            
+            // 1. Try to find a Bengali voice (Bangla)
             preferredVoice = voices.find(voice => 
                 voice.lang === 'bn-BD' || 
                 voice.lang === 'bn-IN' || 
                 voice.lang.includes('bn')
             );
 
-            // Fallback to Hindi or default if Bengali not found (better than silence)
+            // 2. Fallback to English if Bengali not found
+            // User requirement: "Bengali is better, English will do, but other languages won't do."
             if (!preferredVoice) {
-                preferredVoice = voices.find(voice => voice.lang === 'hi-IN') || null;
+                preferredVoice = voices.find(voice => voice.lang.startsWith('en'));
             }
             
-            console.log("Voice loaded:", preferredVoice ? preferredVoice.name : "Default");
+            console.log("Voice loaded:", preferredVoice ? `${preferredVoice.name} (${preferredVoice.lang})` : "System Default (English Fallback Expected)");
         }
 
         window.toggleAudio = () => {
@@ -444,17 +446,20 @@
             const text = document.getElementById('audioText');
             const wave = document.getElementById('audioVisualizer');
 
+            // Ensure voices are loaded/re-checked when toggling
+            if(!preferredVoice) loadVoices();
+
+            const isBengali = preferredVoice && preferredVoice.lang.includes('bn');
+
             if(isAudioEnabled) {
                 icon.className = "fas fa-volume-up text-green-600 text-lg";
                 text.innerText = "Voice On";
                 btn.classList.add('border-green-500');
                 if(synth.speaking) wave.classList.remove('hidden');
                 
-                // Ensure voices are loaded
-                if(!preferredVoice) loadVoices();
-                
                 // Test speech
-                speakCommentary("ভয়েস কমেট্রি চালু হয়েছে");
+                const welcomeMsg = isBengali ? "ভয়েস কমেট্রি চালু হয়েছে" : "Voice commentary enabled";
+                speakCommentary(welcomeMsg);
             } else {
                 icon.className = "fas fa-volume-mute text-lg";
                 text.innerText = "Voice Off";
@@ -474,10 +479,9 @@
             
             if (preferredVoice) {
                 utterance.voice = preferredVoice;
+                utterance.lang = preferredVoice.lang; // Important for correct pronunciation
             }
             
-            // Set lang anyway as backup
-            utterance.lang = 'bn-BD'; 
             utterance.rate = 1.0;
             utterance.pitch = 1.0;
             utterance.volume = 1.0;
@@ -506,31 +510,62 @@
             lastProcessedBallId = ball.id;
 
             let commentary = "";
-            const bowler = ball.bowlerName || "বোলার";
-            const batter = ball.strikerName || "ব্যাটার";
+            const isBengali = preferredVoice && preferredVoice.lang.includes('bn');
+            
+            // Dynamic names based on language
+            const bowler = ball.bowlerName || (isBengali ? "বোলার" : "Bowler");
+            const batter = ball.strikerName || (isBengali ? "ব্যাটার" : "Batter");
 
-            if (ball.isWicket) {
-                commentary = `উইকেট! ${batter} আউট হয়ে ফিরে যাচ্ছেন।`;
-                if(ball.wicketType === 'bowled') commentary += ` বোল্ড আউট করলেন ${bowler}।`;
-                else if(ball.wicketType === 'caught') commentary += ` ক্যাচ আউট হলেন।`;
-                else if(ball.wicketType === 'runout') commentary = `রান আউট! ${batter} রান আউট হলেন।`;
-            } else if (ball.runs === 4) {
-                commentary = `চমৎকার শট! চার রান পেলেন ${batter}।`;
-            } else if (ball.runs === 6) {
-                commentary = `বিশাল ছক্কা! বল সীমানার বাইরে। ছয় রান।`;
-            } else if (ball.extrasType) {
-                 if(ball.extrasType === 'WD') commentary = `ওয়াইড বল। অতিরিক্ত এক রান।`;
-                 else if(ball.extrasType === 'NB') commentary = `নো বল! ফ্রি হিট পাবে ব্যাটিং দল।`;
-                 else if(ball.extrasType === 'LB') commentary = `লেগ বাই থেকে রান।`;
-                 else if(ball.extrasType === 'BY') commentary = `বাই রান।`;
-            } else if (ball.runs === 0) {
-                commentary = `ডট বল। কোনো রান হলো না।`;
-            } else if (ball.runs === 1) {
-                commentary = `এক রান নিলেন।`;
-            } else if (ball.runs === 2) {
-                commentary = `দ্রুত দুই রান নিলেন।`;
+            if (isBengali) {
+                // Bangla Commentary Logic
+                if (ball.isWicket) {
+                    commentary = `উইকেট! ${batter} আউট হয়ে ফিরে যাচ্ছেন।`;
+                    if(ball.wicketType === 'bowled') commentary += ` বোল্ড আউট করলেন ${bowler}।`;
+                    else if(ball.wicketType === 'caught') commentary += ` ক্যাচ আউট হলেন।`;
+                    else if(ball.wicketType === 'runout') commentary = `রান আউট! ${batter} রান আউট হলেন।`;
+                } else if (ball.runs === 4) {
+                    commentary = `চমৎকার শট! চার রান পেলেন ${batter}।`;
+                } else if (ball.runs === 6) {
+                    commentary = `বিশাল ছক্কা! বল সীমানার বাইরে। ছয় রান।`;
+                } else if (ball.extrasType) {
+                     if(ball.extrasType === 'WD') commentary = `ওয়াইড বল। অতিরিক্ত এক রান।`;
+                     else if(ball.extrasType === 'NB') commentary = `নো বল! ফ্রি হিট পাবে ব্যাটিং দল।`;
+                     else if(ball.extrasType === 'LB') commentary = `লেগ বাই থেকে রান।`;
+                     else if(ball.extrasType === 'BY') commentary = `বাই রান।`;
+                } else if (ball.runs === 0) {
+                    commentary = `ডট বল। কোনো রান হলো না।`;
+                } else if (ball.runs === 1) {
+                    commentary = `এক রান নিলেন।`;
+                } else if (ball.runs === 2) {
+                    commentary = `দ্রুত দুই রান নিলেন।`;
+                } else {
+                    commentary = `${ball.runs} রান।`;
+                }
             } else {
-                commentary = `${ball.runs} রান।`;
+                // English Commentary Logic (Fallback)
+                if (ball.isWicket) {
+                    commentary = `Wicket! ${batter} is out.`;
+                    if(ball.wicketType === 'bowled') commentary += ` Bowled by ${bowler}.`;
+                    else if(ball.wicketType === 'caught') commentary += ` Caught out.`;
+                    else if(ball.wicketType === 'runout') commentary = `Run out! ${batter} is run out.`;
+                } else if (ball.runs === 4) {
+                    commentary = `Beautiful shot! Four runs for ${batter}.`;
+                } else if (ball.runs === 6) {
+                    commentary = `Huge hit! That's a six!`;
+                } else if (ball.extrasType) {
+                     if(ball.extrasType === 'WD') commentary = `Wide ball. Extra run.`;
+                     else if(ball.extrasType === 'NB') commentary = `No ball! Free hit coming up.`;
+                     else if(ball.extrasType === 'LB') commentary = `Leg byes taken.`;
+                     else if(ball.extrasType === 'BY') commentary = `Byes.`;
+                } else if (ball.runs === 0) {
+                    commentary = `Dot ball. No run.`;
+                } else if (ball.runs === 1) {
+                    commentary = `Single taken.`;
+                } else if (ball.runs === 2) {
+                    commentary = `Quick couple of runs.`;
+                } else {
+                    commentary = `${ball.runs} runs.`;
+                }
             }
 
             speakCommentary(commentary);
