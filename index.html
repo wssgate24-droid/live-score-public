@@ -191,7 +191,7 @@
         }
         @keyframes toastTimer { from { width: 100%; } to { width: 0%; } }
 
-        /* Commentary Feed Styles (NEW) */
+        /* Commentary Feed Styles */
         .comm-item { position: relative; padding-left: 20px; margin-bottom: 12px; }
         .comm-item::before { content: ''; position: absolute; left: 6px; top: 8px; width: 2px; height: 100%; background: #e5e7eb; }
         .comm-item:last-child::before { display: none; }
@@ -370,7 +370,7 @@
                         <div id="recentBallsContainer" class="flex space-x-3 pb-2"></div>
                    </div>
 
-                    <!-- Fan Poll Widget (NEW) -->
+                    <!-- Fan Poll Widget -->
                     <div id="fanPollSection" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hidden">
                          <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center tracking-wider"><i class="fas fa-vote-yea mr-2 text-purple-500"></i> Fan Poll: Who will win?</h4>
                          <div class="poll-bar-container" onclick="votePoll()">
@@ -402,7 +402,7 @@
                             </div>
                         </div>
 
-                        <!-- Content: Commentary (NEW) -->
+                        <!-- Content: Commentary -->
                         <div id="content-commentary" class="main-tab-content hidden p-4">
                             <div id="commFeed" class="space-y-2">
                                 <p class="text-center text-gray-400 py-4">Waiting for match data...</p>
@@ -570,6 +570,10 @@
         let preferredVoice = null;
         const synth = window.speechSynthesis;
         
+        // Audio & Commentary State
+        let idleCommentaryInterval = null;
+        let lastSpeechTime = 0;
+        
         // Settings State
         let notifSettings = {
             desktop: false,
@@ -578,6 +582,11 @@
             boundaries: true,
             extras: false
         };
+
+        // --- AUDIO ASSETS ---
+        const stadiumAmbience = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-large-stadium-crowd-cheering-461.mp3');
+        stadiumAmbience.loop = true;
+        stadiumAmbience.volume = 0.3; 
 
         const sounds = {
             wicket: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3'),
@@ -589,14 +598,58 @@
             notification: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-bubble-pop-slide-2363.mp3')
         };
         
-        // Commentary Phrases
-        const commPhrases = {
-            dots: ["Defended solidly.", "No run.", "Straight to the fielder.", "Good length, blocked."],
-            singles: ["Pushed into the gap for one.", "Quick single taken.", "Driven to long-on for a run."],
-            fours: ["FOUR! Beautifully timed!", "Cracked through the covers!", "Boundary! The fielder had no chance."],
-            sixes: ["SIX! That's huge!", "Out of the stadium!", "Massive hit over long-on!"],
-            wickets: ["WICKET! Clean bowled!", "Caught! The batsman has to go.", "Edged and gone! Big breakthrough."],
-            extras: ["Wide ball signaled.", "No ball called by the umpire."]
+        // --- IMPROVED BENGALI COMMENTARY DATABASE ---
+        // আরও সুন্দর এবং বিস্তারিত বর্ণনার জন্য বাক্যগুলো আপডেট করা হয়েছে।
+        const bengaliCommentary = {
+            intro: [
+                "সুস্বাগতম ক্রিকেট প্রেমিরা! আজকের এই রোমাঞ্চকর ম্যাচে আপনাদের সাথে আছি আমি। মাঠের পরিবেশ আজ সত্যিই চমৎকার!",
+                "আসসালামু আলাইকুম! শুরু হতে যাচ্ছে আরও একটি উত্তেজনাপূর্ণ লড়াই। স্টেডিয়ামে দর্শকদের উচ্ছ্বাস কানায় কানায় পূর্ণ।",
+                "আজকের আবহাওয়া ক্রিকেটের জন্য একদম আদর্শ। আশা করছি আমরা একটি দুর্দান্ত ম্যাচ উপভোগ করব।"
+            ],
+            dots: [
+                "বোলার খুব সুন্দর একটি ডেলিভারি দিলেন। ব্যাটসম্যান সতর্কতার সাথে বলটি ডিফেন্ড করলেন। কোনো রান হলো না, খেলার পরিস্থিতি স্থিতিশীল।",
+                "অসাধারণ লাইন এবং লেংথ! ব্যাটসম্যান বুঝতেই পারলেন না, বল সোজা ফিল্ডারের হাতে। ডট বল।",
+                "ব্যাটসম্যান ঝুঁকি নিতে চাইলেন না, রক্ষণাত্মক ভঙ্গিতে খেললেন। স্কোরে কোনো পরিবর্তন নেই।"
+            ],
+            singles: [
+                "ব্যাটসম্যান আলতো করে বলটি গ্যাপে ঠেলে দিয়ে দ্রুত প্রান্ত বদল করলেন। বুদ্ধিদীপ্ত ব্যাটিং, স্কোরবোর্ডে আরও একটি রান যুক্ত হলো।",
+                "সুন্দর প্লেসমেন্ট! মিড-অন অঞ্চল দিয়ে খেলে একটি রান নিলেন। স্ট্রাইক রোটেট করে চাপ কমানোর চেষ্টা।",
+                "রিস্টের দারুণ ব্যবহারে বল লেগ সাইডে ঠেলে দিয়ে এক রান। খেলার গতি সচল রাখছেন ব্যাটসম্যানরা।"
+            ],
+            twos: [
+                "দ্রুত রানিং বিটুইন দ্য উইকেট! ফিল্ডার বল কুড়িয়ে ফেরত পাঠানোর আগেই ব্যাটসম্যানরা দুটি রান পূর্ণ করলেন। দারুণ বোঝাপড়া!",
+                "গ্যাপে বল পাঠিয়েই দৌড় শুরু! অনায়াসেই দুটি রান নিলেন, ফিল্ডারের কিছু করার ছিল না।"
+            ],
+            threes: [
+                "বাউন্ডারি লাইনের খুব কাছে ফিল্ডিং হলো, কিন্তু ততক্ষণে ব্যাটসম্যানরা বিদ্যুৎগতিতে তিনটি রান নিয়ে নিলেন! অসাধারণ ফিটনেস।",
+                "মাঠের বড় অংশ কাজে লাগিয়ে তিনটি রান! ফিল্ডারদের ওপর চাপ সৃষ্টি করলেন ব্যাটসম্যানরা।"
+            ],
+            fours: [
+                "অপূর্ব টাইমিং! ব্যাটসম্যানের ব্যাট থেকে যেন গুলি বেরোল, বল সোজা বাউন্ডারির বাইরে। চার রান!",
+                "কি চমৎকার শট! বোলারকে কোনো সুযোগই দিলেন না, বল মাটি কামড়ে সীমানার বাইরে। দর্শণীয় বাউন্ডারি!",
+                "ফিল্ডারের মাথার ওপর দিয়ে কভার ড্রাইভ! বল চোখের পলকে বাউন্ডারি পার। অসাধারণ চার!"
+            ],
+            sixes: [
+                "ওহ, কি বিশাল শট! ব্যাটসম্যান তার সমস্ত শক্তি দিয়ে বলটি গ্যালারিতে পাঠালেন। আম্পায়ারের দুই হাত উপরে, ছক্কা!",
+                "আকাশচুম্বী শট! বল হাওয়ায় ভাসতে ভাসতে স্টেডিয়ামের বাইরে গিয়ে পড়ল। দর্শকদের উল্লাস দেখার মতো!",
+                "ব্যাটে-বলে সংযোগ হতেই বোঝা গিয়েছিল এটি ছক্কা হবে। বোলার হতাশ, কিন্তু দর্শকরা দারুণ উপভোগ করলেন!"
+            ],
+            wickets: [
+                "কি দারুণ ডেলিভারি! ব্যাটসম্যান পরাস্ত, এবং উইকেট! খেলার মোড় সম্পূর্ণ ঘুরে গেল।",
+                "আকাশে বল... ফিল্ডার তার নিচে... এবং দারুণ একটি ক্যাচ! সাজঘরে ফিরতে হচ্ছে ব্যাটসম্যানকে। বোলার উচ্ছ্বসিত!",
+                "বোল্ড আউট! স্ট্যাম্প ছিটকে গেল! বোলারের গতি আর সুইংয়ের কাছে হার মানলেন ব্যাটসম্যান।",
+                "এলবিডব্লিউর জোরালো আবেদন... এবং আঙুল তুললেন আম্পায়ার! প্যাভিলিয়নের পথ ধরলেন ব্যাটসম্যান।"
+            ],
+            extras: {
+                WD: "ওয়াইড বল! বলটি লেগ স্ট্যাম্পের অনেক বাইরে দিয়ে গেল। আম্পায়ার হাত প্রসারিত করলেন, অতিরিক্ত রান।",
+                NB: "ওহ, এটি নো বল! বোলার দাগ অতিক্রম করেছেন। ব্যাটিং দল ফ্রি হিট পাবে, বড় সুযোগ!",
+                LB: "লেগ বাই থেকে রান এলো। বল প্যাডে লেগে দিক পরিবর্তন করল।",
+                BY: "কিপার বল ধরতে ব্যর্থ হলেন, বাই রান যুক্ত হলো স্কোরবোর্ডে।"
+            },
+            milestones: [
+                "অসাধারণ! দলীয় ৫০ রান পূর্ণ হলো। এই জুটির বোঝাপড়া দলকে ভালো অবস্থানে নিয়ে যাচ্ছে।",
+                "দলীয় ১০০ রান স্পর্শ করল! ব্যাটসম্যানরা এখন সেট হয়ে গেছেন, বড় স্কোরের দিকে এগোচ্ছেন।"
+            ]
         };
 
         const getCollPath = (name) => `artifacts/${appId}/public/data/${name}`; 
@@ -755,32 +808,64 @@
             const isBengali = preferredVoice && preferredVoice.lang.includes('bn');
 
             if(isAudioEnabled) {
+                // UI Update
                 icon.className = "fas fa-volume-up text-green-600 text-lg";
-                text.innerText = "Commentary On";
+                text.innerText = "ধারাভাষ্য চলছে"; 
                 btn.classList.add('border-green-500', 'ring-2', 'ring-green-100');
-                if(synth.speaking) wave.classList.remove('hidden');
-                speakCommentary(isBengali ? "ধারাভাষ্য চালু হয়েছে" : "Live commentary enabled");
+                
+                // Start Background Noise
+                stadiumAmbience.play().catch(e => console.log("Bg audio failed", e));
+                
+                // Initial Greeting
+                speakCommentary(bengaliCommentary.intro[Math.floor(Math.random() * bengaliCommentary.intro.length)]);
+                
+                // NOTE: Idle chatter removed as per request (অনবরত ধারাভাষ্য বন্ধ)
+                if(idleCommentaryInterval) clearInterval(idleCommentaryInterval);
+
             } else {
+                // Stop Everything
                 icon.className = "fas fa-volume-mute text-lg";
-                text.innerText = "Commentary Off";
+                text.innerText = "ধারাভাষ্য বন্ধ";
                 btn.classList.remove('border-green-500', 'ring-2', 'ring-green-100');
                 wave.classList.add('hidden');
+                
                 synth.cancel();
+                stadiumAmbience.pause();
+                if(idleCommentaryInterval) clearInterval(idleCommentaryInterval);
             }
         };
 
-        function speakCommentary(text) {
+        function speakCommentary(text, volume = 1.0, pitch = 1.0) {
             if(!isAudioEnabled || !text) return;
+            
             synth.cancel(); 
+
             const utterance = new SpeechSynthesisUtterance(text);
             if (preferredVoice) {
                 utterance.voice = preferredVoice;
                 utterance.lang = preferredVoice.lang;
             }
+            
             utterance.rate = 1.0; 
+            utterance.pitch = pitch;
+            utterance.volume = volume;
+
             const wave = document.getElementById('audioVisualizer');
-            utterance.onstart = () => { if(isAudioEnabled) wave.classList.remove('hidden'); };
-            utterance.onend = () => { wave.classList.add('hidden'); };
+            
+            utterance.onstart = () => { 
+                lastSpeechTime = Date.now();
+                if(isAudioEnabled) {
+                    wave.classList.remove('hidden');
+                    stadiumAmbience.volume = 0.1; // Duck audio
+                }
+            };
+            
+            utterance.onend = () => { 
+                lastSpeechTime = Date.now();
+                wave.classList.add('hidden');
+                if(isAudioEnabled) stadiumAmbience.volume = 0.3; // Restore audio
+            };
+            
             synth.speak(utterance);
         }
 
@@ -864,22 +949,46 @@
             if (!isAudioEnabled) return;
 
             let commentary = "";
-            const isBengali = preferredVoice && preferredVoice.lang.includes('bn');
-            const strikerStat = state.batsmen[ball.strikerId] || { runs: 0, balls: 0 };
-            
-            if (isBengali) {
-                if (ball.isWicket) commentary = `উইকেট! ${ball.strikerName} আউট।`;
-                else if (ball.runs === 4) commentary = `চার রান! ${ball.strikerName} পৌঁছে গেলেন ${strikerStat.runs} রানে।`;
-                else if (ball.runs === 6) commentary = `বিশাল ছক্কা!`;
-                else if (ball.runs === 0) commentary = `ডট বল।`;
-                else commentary = `${ball.runs} রান নিলেন।`;
-                if(state.innings[state.currentInnings].balls % 6 === 0) commentary += ` ওভার শেষ হলো।`; 
-            } else {
-                if (ball.isWicket) commentary = `Wicket! ${ball.strikerName} is out.`;
-                else if (ball.runs === 4) commentary = `Four runs!`;
-                else if (ball.runs === 6) commentary = `That is a six!`;
-                else commentary = `${ball.runs} runs.`;
+            const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+            // সুন্দর ব্যাখ্যামূলক ধারাভাষ্য নির্বাচন
+            if (ball.isWicket) {
+                commentary = getRandom(bengaliCommentary.wickets);
+            } 
+            else if (ball.runs === 4) {
+                commentary = getRandom(bengaliCommentary.fours);
+            } 
+            else if (ball.runs === 6) {
+                commentary = getRandom(bengaliCommentary.sixes);
+            } 
+            else if (ball.runs === 0) {
+                commentary = getRandom(bengaliCommentary.dots);
+            } 
+            else if (ball.runs === 1) {
+                commentary = getRandom(bengaliCommentary.singles);
             }
+            else if (ball.runs === 2) {
+                commentary = getRandom(bengaliCommentary.twos);
+            }
+            else if (ball.runs === 3) {
+                commentary = getRandom(bengaliCommentary.threes);
+            }
+            else {
+                commentary = `ব্যাটে বলে ভালো সংযোগ হয়নি, তবে তারা ${ball.runs} টি রান নিতে সক্ষম হলেন।`;
+            }
+
+            // এক্সট্রা রানের সুন্দর ব্যাখ্যা
+            if (ball.extrasType) {
+                const extraText = bengaliCommentary.extras[ball.extrasType] || "অতিরিক্ত খাত থেকে রান এল।";
+                commentary = `${extraText} ${commentary}`;
+            }
+
+            // ওভার শেষের ঘোষণা
+            if(state.innings[state.currentInnings].balls % 6 === 0) {
+                const score = state.innings[state.currentInnings];
+                commentary += ` আরও একটি ওভারের সমাপ্তি। বর্তমানে দলের সংগ্রহ ${score.runs} রান, ${score.wickets} উইকেটের বিনিময়ে।`;
+            }
+
             speakCommentary(commentary);
         }
 
@@ -1091,7 +1200,7 @@
         function renderCommentary(timeline) {
             const feed = document.getElementById('commFeed');
             if(!timeline || timeline.length === 0) {
-                feed.innerHTML = '<p class="text-center text-gray-400 py-4">No commentary available yet.</p>';
+                feed.innerHTML = '<p class="text-center text-gray-400 py-4">এখনও কোন ধারাভাষ্য নেই।</p>';
                 return;
             }
             let html = '';
@@ -1099,25 +1208,31 @@
             // Limit to last 30 balls
             timeline.slice(0, 30).forEach(ball => {
                 let ballClass = 'run-normal';
-                let text = "Run scored.";
+                let text = "";
                 
+                // Get random phrases from DB for text display
+                const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+
+                // এখানে ধারাভাষ্য টেক্সট দেখানোর জন্য আগের সিম্পল লজিকই রাখা হয়েছে ভিজ্যুয়াল ফিডের জন্য।
+                // কিন্তু অডিওতে নতুন "beautiful" টেক্সট ব্যবহার করা হবে।
                 if(ball.isWicket) {
                     ballClass = 'run-w';
-                    text = commPhrases.wickets[Math.floor(Math.random()*commPhrases.wickets.length)];
-                    text += ` <b>${ball.strikerName}</b> out.`;
+                    text = `<b>${ball.strikerName}</b> আউট!`;
                 } else if(ball.runs === 4) {
                     ballClass = 'run-4';
-                    text = commPhrases.fours[Math.floor(Math.random()*commPhrases.fours.length)];
+                    text = "দারুণ চার!";
                 } else if(ball.runs === 6) {
                     ballClass = 'run-6';
-                    text = commPhrases.sixes[Math.floor(Math.random()*commPhrases.sixes.length)];
-                } else if(ball.runs === 1) {
-                    text = commPhrases.singles[Math.floor(Math.random()*commPhrases.singles.length)];
+                    text = "বিশাল ছক্কা!";
                 } else if(ball.runs === 0) {
-                    text = commPhrases.dots[Math.floor(Math.random()*commPhrases.dots.length)];
+                    text = "ডট বল।";
+                } else {
+                     text = `${ball.runs} রান।`;
                 }
 
-                if(ball.extrasType) text = `<b>${ball.extrasType}</b>. ` + text;
+                if(ball.extrasType) {
+                    text = `<b>${ball.extrasType}</b> - ${text}`;
+                }
 
                 let ballDisplay = ball.isWicket ? 'W' : (ball.extrasType || ball.runs);
 
@@ -1127,7 +1242,7 @@
                         <div class="flex justify-between items-start">
                             <div>
                                 <span class="text-xs font-bold text-gray-500 mr-2">${ball.cumulativeOvers || ''}</span>
-                                <span class="text-sm font-bold text-gray-800 dark:text-gray-200">${ball.bowlerName || 'Bowler'} to ${ball.strikerName || 'Batter'}</span>
+                                <span class="text-sm font-bold text-gray-800 dark:text-gray-200">${ball.bowlerName || 'বোলার'} বল করছেন ${ball.strikerName || 'ব্যাটসম্যান'} কে</span>
                                 <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${text}</p>
                             </div>
                         </div>
@@ -1310,7 +1425,7 @@
                     const stats = state.bowlers[p.id];
                     if(stats) {
                         bowlerFound = true; const overs = Math.floor(stats.balls/6) + '.' + (stats.balls%6); const eco = stats.balls > 0 ? ((stats.runs/stats.balls)*6).toFixed(1) : "0.0"; const isCurrent = (match.currentBowlerId === p.id);
-                        bowlHtml += `<tr class="border-b dark:border-gray-700 ${isCurrent ? 'bg-blue-50 dark:bg-blue-900/10' : ''}"><td class="py-2.5 px-3 ${isCurrent ? 'font-bold text-blue-700 dark:text-blue-300' : ''}">${p.name} ${isCurrent ? '<span class="text-[10px] ml-1">●</span>' : ''}</td><td class="text-right px-2">${overs}</td><td class="text-right px-2 text-gray-400">${stats.maidens}</td><td class="text-right px-2">${stats.runs}</td><td class="text-right px-2 font-bold text-red-600">${stats.wickets}</td><td class="text-right px-2 text-xs text-gray-500">${eco}</td></tr>`;
+                        bowlHtml += `<tr class="border-b dark:border-gray-700 ${isCurrent ? 'bg-blue-50 dark:bg-blue-900/10' : ''}"><td class="text-left py-2 px-3 ${isCurrent ? 'font-bold text-blue-700 dark:text-blue-300' : ''}">${p.name} ${isCurrent ? '<span class="text-[10px] ml-1">●</span>' : ''}</td><td class="text-right px-2">${overs}</td><td class="text-right px-2 text-gray-400">${stats.maidens}</td><td class="text-right px-2">${stats.runs}</td><td class="text-right px-2 font-bold text-red-600">${stats.wickets}</td><td class="text-right px-2 text-xs text-gray-500">${eco}</td></tr>`;
                     }
                 });
                 if(!bowlerFound) bowlHtml += `<tr><td colspan="6" class="text-center py-2 text-gray-400 text-xs">No active bowlers</td></tr>`; bowlHtml += `</tbody></table></div>`;
