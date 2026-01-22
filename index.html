@@ -135,6 +135,28 @@
             -ms-overflow-style: none;
             scrollbar-width: none;
         }
+
+        /* --- NEW ANIMATION CSS --- */
+        .flying-run-indicator {
+            position: fixed;
+            z-index: 9999;
+            font-family: 'Oswald', sans-serif;
+            font-weight: bold;
+            pointer-events: none;
+            text-shadow: 0 4px 15px rgba(0,0,0,0.3);
+            will-change: transform, opacity;
+            user-select: none;
+        }
+        
+        @keyframes scorePulseImpact {
+            0% { transform: scale(1); filter: brightness(1); }
+            50% { transform: scale(1.4); filter: brightness(1.3); text-shadow: 0 0 20px rgba(16, 185, 129, 0.6); color: #10b981; }
+            100% { transform: scale(1); filter: brightness(1); }
+        }
+        
+        .score-impact-anim {
+            animation: scorePulseImpact 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-app-bg text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-300 font-sans pb-24 selection:bg-green-500 selection:text-white">
@@ -254,7 +276,7 @@
                     <div class="flex items-center justify-between mt-2">
                         <div class="text-center w-[40%]">
                             <h3 id="teamAName" class="font-bold text-lg sm:text-xl font-display leading-tight text-gray-800 dark:text-white truncate">Team A</h3>
-                            <div class="mt-2 text-3xl sm:text-4xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-tight" id="teamAScore">0/0</div>
+                            <div class="mt-2 text-3xl sm:text-4xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-transform duration-150" id="teamAScore">0/0</div>
                             <div class="text-sm font-medium text-gray-500 mt-1" id="teamAOvers">0.0 ov</div>
                         </div>
                         
@@ -264,7 +286,7 @@
 
                         <div class="text-center w-[40%]">
                             <h3 id="teamBName" class="font-bold text-lg sm:text-xl font-display leading-tight text-gray-800 dark:text-white truncate">Team B</h3>
-                            <div class="mt-2 text-3xl sm:text-4xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-tight" id="teamBScore">0/0</div>
+                            <div class="mt-2 text-3xl sm:text-4xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-tight transition-transform duration-150" id="teamBScore">0/0</div>
                             <div class="text-sm font-medium text-gray-500 mt-1" id="teamBOvers">0.0 ov</div>
                         </div>
                     </div>
@@ -728,6 +750,8 @@
                 if(lastBall.id > lastProcessedBallId) {
                     lastProcessedBallId = lastBall.id;
                     triggerEventEffects(lastBall);
+                    // NEW: Trigger Flying Score Animation
+                    handleRunAnimation(lastBall, state.currentInnings);
                 }
             }
 
@@ -769,6 +793,67 @@
                     overlay.classList.remove('active');
                 }, 3500);
             }
+        }
+
+        // --- NEW: Flying Score Animation ---
+        function handleRunAnimation(ball, innings) {
+            const totalRuns = ball.runs + (ball.extrasRuns || 0);
+            if(totalRuns === 0 && !ball.isWicket) return; // Skip 0 run balls unless wicket
+
+            const targetId = innings === 1 ? 'teamAScore' : 'teamBScore';
+            const targetEl = document.getElementById(targetId);
+            if(!targetEl) return;
+
+            const rect = targetEl.getBoundingClientRect();
+            // Calculate target center
+            const targetX = rect.left + rect.width / 2;
+            const targetY = rect.top + rect.height / 2;
+
+            // Start Position (Center of screen, slightly lower)
+            const startX = window.innerWidth / 2;
+            const startY = window.innerHeight / 2 + 80;
+
+            // Create Element
+            const el = document.createElement('div');
+            el.className = 'flying-run-indicator text-4xl';
+            // Determine text content
+            let txt = `+${totalRuns}`;
+            if(ball.isWicket && totalRuns === 0) txt = "W";
+            else if(ball.isWicket) txt = `W+${totalRuns}`;
+            
+            el.innerHTML = txt;
+            
+            // Colors
+            if(ball.isWicket) el.classList.add('text-red-500');
+            else if(totalRuns >= 4) el.classList.add('text-green-500');
+            else el.classList.add('text-gray-800', 'dark:text-white');
+            
+            // Initial positioning
+            el.style.left = `${startX}px`;
+            el.style.top = `${startY}px`;
+            el.style.transform = 'translate(-50%, -50%) scale(0)';
+            
+            document.body.appendChild(el);
+
+            // Animate using WAAPI
+            const animation = el.animate([
+                { transform: 'translate(-50%, -50%) scale(0.5)', opacity: 0, offset: 0 },
+                { transform: 'translate(-50%, -50%) scale(2.5)', opacity: 1, offset: 0.2 }, // Pop up big
+                { transform: `translate(${targetX - startX}px, ${targetY - startY}px) scale(0.5)`, opacity: 1, offset: 0.8 }, // Fly to score
+                { transform: `translate(${targetX - startX}px, ${targetY - startY}px) scale(0.2)`, opacity: 0, offset: 1 } // Fade out into score
+            ], {
+                duration: 900,
+                easing: 'cubic-bezier(0.25, 1, 0.5, 1)',
+                fill: 'forwards'
+            });
+
+            animation.onfinish = () => {
+                el.remove();
+                // Trigger pulse on the score text
+                targetEl.classList.remove('score-impact-anim');
+                void targetEl.offsetWidth; // Force reflow
+                targetEl.classList.add('score-impact-anim');
+            };
         }
 
         // Helper to get Bengali Text for Commentary
