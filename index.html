@@ -14,8 +14,8 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Fonts: 'Inter' for UI, 'Oswald' for Numbers -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Fonts: 'Inter' for UI, 'Oswald' for Numbers, 'Hind Siliguri' for Bengali -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@400;500;700&family=Hind+Siliguri:wght@400;500;600;700&display=swap" rel="stylesheet">
 
     <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
@@ -30,6 +30,7 @@
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                         display: ['Oswald', 'sans-serif'],
+                        bengali: ['Hind Siliguri', 'sans-serif'], // Added for Bengali text
                     },
                     colors: {
                         app: {
@@ -268,11 +269,17 @@
                         </div>
                     </div>
 
-                    <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700/50 flex flex-wrap justify-center gap-3 text-xs font-bold">
-                        <span id="matchResult" class="text-green-600 dark:text-green-400">Match Started</span>
-                        <!-- Target ID kept, default hidden -->
-                        <span id="matchTargetDisplay" class="hidden text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">Target: 0</span>
-                        <span id="matchCRR" class="text-gray-500 hidden">CRR: 0.00</span>
+                    <div class="mt-4 flex flex-col items-center gap-2">
+                         <!-- Current Partnership Display -->
+                        <div id="partnershipDisplay" class="bg-gray-100 dark:bg-gray-800 px-3 py-1 rounded-full text-xs font-bold text-gray-600 dark:text-gray-300 hidden">
+                            <i class="fas fa-handshake mr-1 text-green-500"></i> Partnership: <span id="partnerRuns">0</span> (<span id="partnerBalls">0</span>)
+                        </div>
+
+                        <div class="pt-2 border-t border-gray-100 dark:border-gray-700/50 flex flex-wrap justify-center gap-3 text-xs font-bold w-full">
+                            <span id="matchResult" class="text-green-600 dark:text-green-400">Match Started</span>
+                            <!-- Target ID kept, default hidden -->
+                            <span id="matchTargetDisplay" class="hidden text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">Target: 0</span>
+                        </div>
                     </div>
                 </div>
 
@@ -312,16 +319,36 @@
                         <div id="live-content-teamB" class="p-3 hidden"></div>
                     </div>
 
-                    <!-- Commentary Tab -->
-                    <div id="content-commentary" class="tab-content hidden animate-pop-in p-4">
+                    <!-- Commentary Tab (Bengali) -->
+                    <div id="content-commentary" class="tab-content hidden animate-pop-in p-4 font-bengali">
                         <div id="commFeed" class="space-y-4"></div>
                     </div>
 
                     <!-- Analytics Tab -->
                     <div id="content-analytics" class="tab-content hidden animate-pop-in p-4">
+                        <!-- Projected Score Card -->
+                        <div class="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-xl mb-4 border border-indigo-100 dark:border-indigo-500/30">
+                             <h4 class="text-xs font-bold uppercase text-indigo-500 mb-2">Projected Score (সম্ভাব্য স্কোর)</h4>
+                             <div class="flex justify-between items-center">
+                                 <div>
+                                     <div class="text-xs text-gray-500">Current Run Rate</div>
+                                     <div class="text-xl font-bold font-display" id="anaCRR">0.00</div>
+                                 </div>
+                                 <div class="text-right">
+                                     <div class="text-xs text-gray-500">Projected (20 ov)</div>
+                                     <div class="text-2xl font-bold font-display text-indigo-600 dark:text-indigo-400" id="anaProj">0</div>
+                                 </div>
+                             </div>
+                        </div>
+
                         <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl mb-4">
-                            <h4 class="text-xs font-bold uppercase text-gray-400 mb-4 text-center">Run Rate Comparison</h4>
+                            <h4 class="text-xs font-bold uppercase text-gray-400 mb-4 text-center">Run Rate Comparison (Worm)</h4>
                             <div class="h-48 w-full"><canvas id="wormChart"></canvas></div>
+                        </div>
+
+                        <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl mb-4">
+                            <h4 class="text-xs font-bold uppercase text-gray-400 mb-4 text-center">Runs Per Over (Bar)</h4>
+                            <div class="h-48 w-full"><canvas id="barChart"></canvas></div>
                         </div>
                     </div>
                 </div>
@@ -427,6 +454,7 @@
         let matchesListUnsubscribe = null; 
         let currentMatchState = null;
         let wormChartInstance = null;
+        let barChartInstance = null;
         let lastProcessedBallId = 0;
 
         const getCollPath = (name) => `artifacts/${appId}/public/data/${name}`;
@@ -564,8 +592,7 @@
             lastProcessedBallId = 0;
             switchView('matchDetail');
             
-            // --- FIX START: Reset UI completely to prevent old data flicker ---
-            // 1. Reset Scores & Names
+            // --- Reset UI ---
             document.getElementById('teamAScore').innerText = '0/0';
             document.getElementById('teamBScore').innerText = '0/0';
             document.getElementById('teamAOvers').innerText = '0.0 ov';
@@ -574,27 +601,21 @@
             document.getElementById('teamBName').innerText = 'Loading...';
             document.getElementById('matchStatusBadge').innerText = 'LOADING...';
             
-            // 2. Hide Target & Win Probability explicitly (Fixes the issue)
             document.getElementById('matchTargetDisplay').classList.add('hidden');
+            document.getElementById('partnershipDisplay').classList.add('hidden');
             document.getElementById('winProbContainer').classList.add('hidden');
             document.getElementById('matchResult').innerText = '';
 
-            // 3. Clear Lists
             document.getElementById('recentBallsContainer').innerHTML = '';
             document.getElementById('commFeed').innerHTML = '';
             document.getElementById('live-content-teamA').innerHTML = '<div class="text-center p-4 text-gray-400">Loading Scorecard...</div>';
             document.getElementById('live-content-teamB').innerHTML = '';
             
-            // 4. Reset Tabs
             switchMainTab('scorecard');
             switchLiveTab('teamA');
 
-            // 5. Destroy old chart instance to prevent glitch
-            if(wormChartInstance) {
-                wormChartInstance.destroy();
-                wormChartInstance = null;
-            }
-            // --- FIX END ---
+            if(wormChartInstance) { wormChartInstance.destroy(); wormChartInstance = null; }
+            if(barChartInstance) { barChartInstance.destroy(); barChartInstance = null; }
             
             if(currentMatchUnsubscribe) currentMatchUnsubscribe();
             
@@ -608,15 +629,19 @@
         };
 
         function calculateMatchState(matchData) {
-            // Reconstruct local state from history
             const state = {
-                innings: { 1: { runs: 0, wickets: 0, overs: 0, balls: 0, history: [] }, 2: { runs: 0, wickets: 0, overs: 0, balls: 0, history: [] } },
+                innings: { 1: { runs: 0, wickets: 0, overs: 0, balls: 0, history: [], runPerOver: [] }, 2: { runs: 0, wickets: 0, overs: 0, balls: 0, history: [], runPerOver: [] } },
                 currentInnings: matchData.currentInnings || 1,
                 batsmen: {}, bowlers: {}, 
-                timeline: []
+                timeline: [],
+                currentPartnership: { runs: 0, balls: 0 },
+                totalLegalBalls: 0
             };
 
             const history = matchData.history || [];
+            let lastWicketScore = 0;
+            let lastWicketBalls = 0;
+            let currentOverRuns = 0;
             
             history.forEach((ball, index) => {
                 const inn = ball.innings;
@@ -641,11 +666,13 @@
                     if(ball.extrasType === 'WD' || ball.extrasType === 'NB') { 
                         isLegal = false; 
                         batRuns = (ball.extrasType === 'NB') ? ball.runs : 0;
-                    } else { batRuns = 0; } // LB/BY counts to team not bat
+                    } else { batRuns = 0; }
                 }
 
                 // Update Stats
                 s.runs += totalRuns;
+                currentOverRuns += totalRuns;
+
                 if(striker) {
                     striker.runs += batRuns;
                     if(isLegal) striker.balls++;
@@ -654,14 +681,19 @@
                 }
                 if(bowler) {
                     bowler.runs += totalRuns;
-                    if(ball.extrasType === 'LB' || ball.extrasType === 'BY') bowler.runs -= totalRuns; // Don't count LB/BY against bowler
+                    if(ball.extrasType === 'LB' || ball.extrasType === 'BY') bowler.runs -= totalRuns; 
                     if(isLegal) bowler.balls++;
                     if(ball.isWicket && ball.wicketType !== 'runout') bowler.wickets++;
                 }
 
                 if(isLegal) {
                     s.balls++;
-                    if(s.balls === 6) { s.overs++; s.balls = 0; }
+                    state.totalLegalBalls++; // Track global legal balls for partnership logic check
+                    if(s.balls === 6) { 
+                        s.overs++; s.balls = 0; 
+                        s.runPerOver.push(currentOverRuns);
+                        currentOverRuns = 0;
+                    }
                 }
 
                 if(ball.isWicket) {
@@ -669,6 +701,9 @@
                     if(state.batsmen[ball.wicketVictimId || ball.strikerId]) {
                         state.batsmen[ball.wicketVictimId || ball.strikerId].out = ball.wicketType;
                     }
+                    // Reset partnership tracking on wicket
+                    lastWicketScore = s.runs;
+                    lastWicketBalls = state.totalLegalBalls;
                 }
 
                 // Push for timeline
@@ -680,6 +715,12 @@
                     s.history.push({ over: s.overs + (s.balls/6), runs: s.runs });
                 }
             });
+
+            // Calculate current partnership (active innings only)
+            const currentInnState = state.innings[state.currentInnings];
+            state.currentPartnership.runs = currentInnState.runs - lastWicketScore;
+            state.currentPartnership.balls = state.totalLegalBalls - lastWicketBalls;
+            if(state.currentPartnership.runs < 0) state.currentPartnership.runs = 0; // safety
 
             // Check for new event trigger
             if(history.length > 0) {
@@ -695,17 +736,11 @@
 
         // --- EFFECTS SYSTEM ---
         function triggerEventEffects(ball) {
-            // নতুন বলের আপডেট আসলে সাউন্ড প্লে হবে
             try {
                 batHitSound.currentTime = 0;
-                batHitSound.volume = 0.5; // সাউন্ড ভলিউম ৫০%
-                batHitSound.play().catch(e => {
-                    // যদি ব্রাউজার অটো-প্লে ব্লক করে, তবে কনসোলে লগ দেখাবে
-                    console.log("Audio autoplay blocked until user interacts.");
-                });
-            } catch(e) {
-                console.error(e);
-            }
+                batHitSound.volume = 0.5;
+                batHitSound.play().catch(e => console.log("Audio autoplay blocked"));
+            } catch(e) {}
 
             // 1. Confetti & Overlay
             if(ball.runs === 6 || ball.runs === 4 || ball.isWicket) {
@@ -714,19 +749,19 @@
                 const subTxt = document.getElementById('eventSub');
                 
                 overlay.classList.remove('opacity-0', 'pointer-events-none');
-                overlay.classList.add('active'); // Triggers scale effect
+                overlay.classList.add('active');
                 
                 if(ball.runs === 6) {
-                    mainTxt.innerText = "6"; mainTxt.style.background = "linear-gradient(to bottom, #4ade80, #16a34a)"; mainTxt.style.webkitBackgroundClip = "text";
-                    subTxt.innerText = "HUGE SIX!";
+                    mainTxt.innerText = "৬"; mainTxt.style.background = "linear-gradient(to bottom, #4ade80, #16a34a)"; mainTxt.style.webkitBackgroundClip = "text";
+                    subTxt.innerText = "বিশাল ছক্কা!";
                     confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#4ade80', '#22c55e'] });
                 } else if (ball.runs === 4) {
-                    mainTxt.innerText = "4"; mainTxt.style.background = "linear-gradient(to bottom, #60a5fa, #2563eb)"; mainTxt.style.webkitBackgroundClip = "text";
-                    subTxt.innerText = "BOUNDARY!";
+                    mainTxt.innerText = "৪"; mainTxt.style.background = "linear-gradient(to bottom, #60a5fa, #2563eb)"; mainTxt.style.webkitBackgroundClip = "text";
+                    subTxt.innerText = "বাউন্ডারি!";
                     confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 }, colors: ['#60a5fa', '#2563eb'] });
                 } else if (ball.isWicket) {
-                    mainTxt.innerText = "OUT"; mainTxt.style.background = "linear-gradient(to bottom, #f87171, #dc2626)"; mainTxt.style.webkitBackgroundClip = "text";
-                    subTxt.innerText = ball.wicketType.toUpperCase();
+                    mainTxt.innerText = "আউট"; mainTxt.style.background = "linear-gradient(to bottom, #f87171, #dc2626)"; mainTxt.style.webkitBackgroundClip = "text";
+                    subTxt.innerText = "উইকেট পতন";
                 }
 
                 setTimeout(() => {
@@ -734,58 +769,57 @@
                     overlay.classList.remove('active');
                 }, 3500);
             }
-
-            // 2. Toast Notification
-            showToast(ball);
         }
 
-        function showToast(ball) {
-            const container = document.getElementById('toastContainer');
-            const el = document.createElement('div');
-            el.className = `glass-card p-3 rounded-lg border-l-4 flex items-center justify-between shadow-lg toast-enter mb-2`;
+        // Helper to get Bengali Text for Commentary
+        function getBengaliComm(ball) {
+            const bowler = ball.bowlerName;
+            const batter = ball.strikerName;
             
-            let text = `${ball.runs} runs`;
-            let borderColor = "border-gray-400";
-            
-            if(ball.isWicket) { text = `Wicket! ${ball.strikerName} out.`; borderColor = "border-red-500"; }
-            else if(ball.runs === 4) { text = `Four! ${ball.strikerName}`; borderColor = "border-blue-500"; }
-            else if(ball.runs === 6) { text = `Six! ${ball.strikerName}`; borderColor = "border-green-500"; }
-            else if(ball.extrasType) { text = `Extra: ${ball.extrasType}`; borderColor = "border-yellow-500"; }
-
-            el.classList.add(borderColor);
-            el.innerHTML = `<span class="font-bold text-sm dark:text-white">${text}</span> <span class="text-xs text-gray-500">${ball.overStr}</span>`;
-            
-            container.appendChild(el);
-            setTimeout(() => {
-                el.classList.remove('toast-enter');
-                el.classList.add('toast-exit');
-                setTimeout(() => el.remove(), 300);
-            }, 3000);
+            if (ball.isWicket) return `<span class="text-red-600 font-bold">আউট!</span> ${bowler} এর বলে ${batter} ফিরে গেলেন প্যাভিলিয়নে। (${ball.wicketType})`;
+            if (ball.runs === 6) return `<span class="text-green-600 font-bold">বিশাল ছক্কা!</span> ${batter} বলটি উড়িয়ে মারলেন সীমানার বাইরে!`;
+            if (ball.runs === 4) return `<span class="text-blue-600 font-bold">চার!</span> ${batter} এর ব্যাটে দুর্দান্ত শট।`;
+            if (ball.runs === 1) return `এক রান নিলেন ${batter}।`;
+            if (ball.runs === 2) return `দুই রান নিলেন ${batter}।`;
+            if (ball.runs === 0) return `ডট বল। সুন্দর ডেলিভারি ${bowler} এর।`;
+            if (ball.extrasType) return `অতিরিক্ত রান (${ball.extrasType})।`;
+            return `${ball.runs} রান।`;
         }
 
         // --- UI UPDATE ---
         function updateUI(match, state) {
-            // Header Stats
             const i1 = state.innings[1]; const i2 = state.innings[2];
             document.getElementById('teamAName').innerText = match.teamAName;
             document.getElementById('teamBName').innerText = match.teamBName;
             document.getElementById('matchTournamentName').innerText = match.tournamentName || 'Match Center';
-            document.getElementById('matchResult').innerText = match.result || (match.status === 'live' ? 'Match In Progress' : 'Result Pending');
+            document.getElementById('matchResult').innerText = match.result || (match.status === 'live' ? 'খেলা চলছে' : 'ফলাফল বাকি');
             
+            // Status Badge
             const badge = document.getElementById('matchStatusBadge');
             if(match.status === 'live') {
                 badge.className = "bg-red-500 text-white text-[10px] px-2.5 py-1 rounded-md uppercase font-bold tracking-wider shadow-sm animate-pulse";
-                badge.innerText = "LIVE";
+                badge.innerText = "সরাসরি";
             } else {
                 badge.className = "bg-gray-500 text-white text-[10px] px-2.5 py-1 rounded-md uppercase font-bold tracking-wider shadow-sm";
-                badge.innerText = "FINISHED";
+                badge.innerText = "সমাপ্ত";
             }
 
+            // Scores
             document.getElementById('teamAScore').innerText = `${i1.runs}/${i1.wickets}`;
             document.getElementById('teamAOvers').innerText = `${i1.overs}.${i1.balls} ov`;
 
             const targetEl = document.getElementById('matchTargetDisplay');
             const winProbEl = document.getElementById('winProbContainer');
+            const partEl = document.getElementById('partnershipDisplay');
+
+            // Partnership Display
+            if(match.status === 'live') {
+                partEl.classList.remove('hidden');
+                document.getElementById('partnerRuns').innerText = state.currentPartnership.runs;
+                document.getElementById('partnerBalls').innerText = state.currentPartnership.balls;
+            } else {
+                partEl.classList.add('hidden');
+            }
 
             if(match.currentInnings === 2 || match.status === 'completed') {
                 document.getElementById('teamBScore').innerText = `${i2.runs}/${i2.wickets}`;
@@ -794,12 +828,10 @@
                 // Target Logic
                 const target = i1.runs + 1;
                 targetEl.classList.remove('hidden');
-                targetEl.innerText = `Target: ${target}`;
+                targetEl.innerText = `লক্ষ্য: ${target}`;
                 
-                // Win Bar (Only show if LIVE and in 2nd innings)
                 if(match.status === 'live') {
                     winProbEl.classList.remove('hidden');
-                    // Simple logic for visual only
                     const need = target - i2.runs;
                     const remBalls = (match.oversLimit*6) - ((i2.overs*6)+i2.balls);
                     const rrr = remBalls > 0 ? need/(remBalls/6) : 99;
@@ -811,10 +843,8 @@
                     winProbEl.classList.add('hidden');
                 }
             } else {
-                 document.getElementById('teamBScore').innerText = "Yet to Bat";
+                 document.getElementById('teamBScore').innerText = "ব্যাট করেনি";
                  document.getElementById('teamBOvers').innerText = "";
-                 
-                 // Explicitly Hide elements if we are back in 1st innings (unlikely but safe)
                  targetEl.classList.add('hidden');
                  winProbEl.classList.add('hidden');
             }
@@ -829,37 +859,43 @@
                 else if(b.runs === 4) { bg = "bg-blue-500 text-white shadow-blue-500/50"; }
                 else if(b.runs === 6) { bg = "bg-green-500 text-white shadow-green-500/50"; }
                 else if(b.extrasType) { bg = "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600"; txt = b.extrasType; }
-                
                 ballCont.innerHTML += `<div class="ball-circle ${bg} flex-shrink-0 snap-start">${txt}</div>`;
             });
 
-            // Scorecard Tables
+            // Scorecards
             renderScorecardTable(match.squadA, state, 'live-content-teamA', match);
             renderScorecardTable(match.squadB, state, 'live-content-teamB', match);
             
-            // Commentary Feed
+            // Bengali Commentary Feed
             const commFeed = document.getElementById('commFeed');
             commFeed.innerHTML = '';
             state.timeline.slice(0, 20).forEach(b => {
                 let border = "border-l-2 border-gray-300 dark:border-gray-600";
-                let title = `${b.runs} Runs`;
-                if(b.isWicket) { border = "border-l-4 border-red-500"; title = "WICKET"; }
-                else if(b.runs === 4 || b.runs === 6) { border = "border-l-4 border-green-500"; title = "BOUNDARY"; }
+                if(b.isWicket) border = "border-l-4 border-red-500";
+                else if(b.runs === 4 || b.runs === 6) border = "border-l-4 border-green-500";
 
                 commFeed.innerHTML += `
-                    <div class="pl-4 relative ${border} py-1">
+                    <div class="pl-4 relative ${border} py-2">
                         <div class="flex justify-between items-center text-xs text-gray-400 mb-1">
-                            <span>Over ${b.overStr}</span>
-                            <span class="font-bold text-gray-600 dark:text-gray-300">${b.bowlerName} to ${b.strikerName}</span>
+                            <span>ওভার ${b.overStr}</span>
+                            <span class="font-bold text-gray-600 dark:text-gray-300">${b.bowlerName} টু ${b.strikerName}</span>
                         </div>
                         <p class="text-sm font-medium text-gray-800 dark:text-gray-200">
-                             ${b.isWicket ? `<span class="text-red-500 font-bold">OUT!</span> ${b.wicketType}` : `${title}`}
+                             ${getBengaliComm(b)}
                         </p>
                     </div>
                 `;
             });
             
-            // Charts
+            // Analytics Calculation
+            if(match.status === 'live') {
+                const curInn = state.innings[state.currentInnings];
+                const ballsDone = (curInn.overs*6) + curInn.balls;
+                const crr = ballsDone > 0 ? (curInn.runs / ballsDone) * 6 : 0;
+                document.getElementById('anaCRR').innerText = crr.toFixed(2);
+                document.getElementById('anaProj').innerText = Math.round(crr * 20); // Assuming 20 overs
+            }
+
             if(document.getElementById('content-analytics').classList.contains('hidden') === false) {
                  renderCharts(state);
             }
@@ -869,7 +905,7 @@
             if(!squad) return;
             const container = document.getElementById(elId);
             let html = `<table class="w-full text-sm border-collapse">
-                <thead><tr class="text-gray-400 text-xs border-b border-gray-200 dark:border-gray-700"><th class="text-left py-2 font-medium">Batter</th><th class="text-right py-2 font-medium">R</th><th class="text-right py-2 font-medium">B</th><th class="text-right py-2 font-medium">4s</th><th class="text-right py-2 font-medium">6s</th><th class="text-right py-2 font-medium">SR</th></tr></thead>
+                <thead><tr class="text-gray-400 text-xs border-b border-gray-200 dark:border-gray-700"><th class="text-left py-2 font-medium">ব্যাটার</th><th class="text-right py-2 font-medium">R</th><th class="text-right py-2 font-medium">B</th><th class="text-right py-2 font-medium">4s</th><th class="text-right py-2 font-medium">6s</th><th class="text-right py-2 font-medium">SR</th></tr></thead>
                 <tbody>`;
             
             squad.forEach(p => {
@@ -901,10 +937,9 @@
             });
             html += `</tbody></table>`;
             
-            // Bowling Section
-            html += `<h5 class="mt-4 mb-2 text-xs font-bold text-gray-400 uppercase">Bowling</h5>
+            html += `<h5 class="mt-4 mb-2 text-xs font-bold text-gray-400 uppercase">বোলার</h5>
             <table class="w-full text-sm border-collapse">
-                <thead><tr class="text-gray-400 text-xs border-b border-gray-200 dark:border-gray-700"><th class="text-left py-2 font-medium">Bowler</th><th class="text-right py-2 font-medium">O</th><th class="text-right py-2 font-medium">M</th><th class="text-right py-2 font-medium">R</th><th class="text-right py-2 font-medium">W</th><th class="text-right py-2 font-medium">Eco</th></tr></thead>
+                <thead><tr class="text-gray-400 text-xs border-b border-gray-200 dark:border-gray-700"><th class="text-left py-2 font-medium">বোলার</th><th class="text-right py-2 font-medium">O</th><th class="text-right py-2 font-medium">M</th><th class="text-right py-2 font-medium">R</th><th class="text-right py-2 font-medium">W</th><th class="text-right py-2 font-medium">Eco</th></tr></thead>
                 <tbody>`;
             
             squad.forEach(p => {
@@ -931,32 +966,58 @@
 
         // --- CHARTS ---
         function renderCharts(state) {
-            const ctx = document.getElementById('wormChart');
-            if(!ctx) return;
+            const ctxWorm = document.getElementById('wormChart');
+            const ctxBar = document.getElementById('barChart');
             
-            const d1 = state.innings[1].history.map(h => h.runs);
-            const d2 = state.innings[2].history.map(h => h.runs);
-            const labels = Array.from({length: Math.max(d1.length, d2.length)}, (_, i) => i);
+            if(ctxWorm && !wormChartInstance) {
+                const d1 = state.innings[1].history.map(h => h.runs);
+                const d2 = state.innings[2].history.map(h => h.runs);
+                const labels = Array.from({length: Math.max(d1.length, d2.length)}, (_, i) => i);
 
-            if(wormChartInstance) wormChartInstance.destroy();
-            wormChartInstance = new Chart(ctx, {
-                type: 'line',
-                data: {
-                    labels: labels,
-                    datasets: [
-                        { label: 'Innings 1', data: d1, borderColor: '#10b981', tension: 0.4, pointRadius: 0, borderWidth: 2 },
-                        { label: 'Innings 2', data: d2, borderColor: '#f59e0b', tension: 0.4, pointRadius: 0, borderWidth: 2 }
-                    ]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { display: true, labels: { color: '#9ca3af', font: {size: 10} } } },
-                    scales: {
-                        x: { display: false },
-                        y: { grid: { color: '#374151', display: false }, ticks: { color: '#9ca3af' } }
+                wormChartInstance = new Chart(ctxWorm, {
+                    type: 'line',
+                    data: {
+                        labels: labels,
+                        datasets: [
+                            { label: '১ম ইনিংস', data: d1, borderColor: '#10b981', tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                            { label: '২য় ইনিংস', data: d2, borderColor: '#f59e0b', tension: 0.4, pointRadius: 0, borderWidth: 2 }
+                        ]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        plugins: { legend: { display: true, labels: { color: '#9ca3af', font: {size: 10} } } },
+                        scales: {
+                            x: { display: false },
+                            y: { grid: { color: '#374151', display: false }, ticks: { color: '#9ca3af' } }
+                        }
                     }
-                }
-            });
+                });
+            }
+
+            if(ctxBar && !barChartInstance) {
+                const rpo1 = state.innings[1].runPerOver;
+                const labels = rpo1.map((_, i) => i + 1);
+                
+                barChartInstance = new Chart(ctxBar, {
+                    type: 'bar',
+                    data: {
+                        labels: labels,
+                        datasets: [{
+                            label: 'রান প্রতি ওভার',
+                            data: rpo1,
+                            backgroundColor: '#6366f1',
+                            borderRadius: 4
+                        }]
+                    },
+                    options: {
+                        responsive: true, maintainAspectRatio: false,
+                        scales: {
+                            y: { beginAtZero: true, grid: { color: '#374151' } },
+                            x: { grid: { display: false } }
+                        }
+                    }
+                });
+            }
         }
 
         // --- PLAYER STATS LOGIC ---
@@ -968,8 +1029,7 @@
                 const q = query(collection(db, getCollPath('players')), orderBy('totalRuns', 'desc'));
                 const snap = await getDocs(q);
                 list.innerHTML = '';
-                
-                window.allPlayersData = {}; // Cache for modal
+                window.allPlayersData = {}; 
 
                 snap.forEach(doc => {
                     const p = doc.data();
@@ -1026,7 +1086,6 @@
             document.getElementById('mEco').innerText = eco;
             document.getElementById('mBest').innerText = p.bestBowling || '-/-';
 
-            // Show Modal
             const modal = document.getElementById('playerModal');
             const content = document.getElementById('modalContent');
             const overlay = document.getElementById('modalOverlay');
