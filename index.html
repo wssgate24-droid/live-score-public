@@ -1,12 +1,11 @@
 <!DOCTYPE html>
-<html lang="bn">
+<html lang="en">
 <head>
     <meta charset="UTF-8">
-    <!-- Updated Viewport for Native App Feel (No Zoom, Full Screen, Notch Support) -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <title>ক্রিকস্কোর প্রো - লাইভ সেন্টার</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>CricScore Pro - Live Center</title>
     
-    <!-- App Icon / Favicon -->
+    <!-- App Icon -->
     <link rel="icon" type="image/png" href="https://i.postimg.cc/FRMTxVb2/app-icon-android.png">
 
     <!-- Tailwind CSS -->
@@ -15,56 +14,50 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Fonts: Added Hind Siliguri for better Bengali support & Poppins -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
-    <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
+    <!-- Fonts: 'Inter' for UI, 'Oswald' for Numbers -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&family=Oswald:wght@400;500;700&display=swap" rel="stylesheet">
 
-    <!-- Chart.js for Graphs -->
+    <!-- Chart.js -->
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <!-- Canvas Confetti for Celebrations -->
+    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.6.0/dist/confetti.browser.min.js"></script>
 
     <script>
         tailwind.config = {
             darkMode: 'class',
             theme: {
                 extend: {
-                    colors: {
-                        cricket: {
-                            green: '#2e7d32',
-                            dark: '#1b5e20',
-                            pitch: '#e8f5e9',
-                            ball: '#b71c1c'
-                        }
-                    },
                     fontFamily: {
-                        // Prioritize Bengali Font
-                        sans: ['Hind Siliguri', 'Poppins', 'sans-serif'],
+                        sans: ['Inter', 'sans-serif'],
                         display: ['Oswald', 'sans-serif'],
                     },
+                    colors: {
+                        app: {
+                            bg: '#0f172a', // Slate 900
+                            card: '#1e293b', // Slate 800
+                            primary: '#10b981', // Emerald 500
+                            accent: '#6366f1', // Indigo 500
+                            danger: '#ef4444',
+                        }
+                    },
                     animation: {
-                        'bounce-slow': 'bounce 3s infinite',
-                        'pulse-fast': 'pulse 1s cubic-bezier(0.4, 0, 0.6, 1) infinite',
-                        'zoom-in': 'zoomIn 0.5s ease-out forwards',
-                        'slide-in-right': 'slideInRight 0.3s ease-out forwards',
-                        'fade-out': 'fadeOut 0.5s ease-in forwards',
-                        'spin-slow': 'spin 3s linear infinite',
-                        'spin-reverse': 'spinReverse 3s linear infinite',
+                        'float': 'float 6s ease-in-out infinite',
+                        'pulse-slow': 'pulse 3s cubic-bezier(0.4, 0, 0.6, 1) infinite',
+                        'slide-up': 'slideUp 0.4s ease-out forwards',
+                        'pop-in': 'popIn 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards',
                     },
                     keyframes: {
-                        zoomIn: {
-                            '0%': { transform: 'scale(0.5)', opacity: '0' },
+                        float: {
+                            '0%, 100%': { transform: 'translateY(0)' },
+                            '50%': { transform: 'translateY(-10px)' },
+                        },
+                        slideUp: {
+                            '0%': { transform: 'translateY(20px)', opacity: '0' },
+                            '100%': { transform: 'translateY(0)', opacity: '1' },
+                        },
+                        popIn: {
+                            '0%': { transform: 'scale(0.8)', opacity: '0' },
                             '100%': { transform: 'scale(1)', opacity: '1' },
-                        },
-                        slideInRight: {
-                            '0%': { transform: 'translateX(100%)', opacity: '0' },
-                            '100%': { transform: 'translateX(0)', opacity: '1' },
-                        },
-                        fadeOut: {
-                            '0%': { opacity: '1' },
-                            '100%': { opacity: '0' },
-                        },
-                        spinReverse: {
-                            '0%': { transform: 'rotate(0deg)' },
-                            '100%': { transform: 'rotate(-360deg)' },
                         }
                     }
                 }
@@ -73,505 +66,335 @@
     </script>
 
     <style>
-        /* Safe Area Support for Notched Phones */
-        body { 
-            font-family: 'Hind Siliguri', sans-serif; 
-            padding-top: env(safe-area-inset-top);
-            padding-bottom: env(safe-area-inset-bottom);
-            padding-left: env(safe-area-inset-left);
-            padding-right: env(safe-area-inset-right);
-            /* Prevent pull-to-refresh on mobile apps to feel native */
-            overscroll-behavior-y: none;
-            -webkit-tap-highlight-color: transparent;
-        }
-        .font-display { font-family: 'Oswald', sans-serif; }
-        
-        .cricket-bg {
-            background-image: linear-gradient(rgba(0,0,0,0.8), rgba(0,0,0,0.8)), url('https://images.unsplash.com/photo-1531415074968-bc2ce8a10022?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80');
-            background-size: cover;
-            background-position: center;
-            background-attachment: fixed;
-        }
-        .glass-panel {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(10px);
-        }
-        .dark .glass-panel {
-            background: rgba(31, 41, 55, 0.95);
-        }
-        .hide-scroll::-webkit-scrollbar { display: none; }
-        .hide-scroll { -ms-overflow-style: none; scrollbar-width: none; }
-        
-        .score-ball {
-            width: 36px;
-            height: 36px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            border-radius: 50%;
-            font-weight: bold;
-            font-size: 0.8rem;
-            transition: transform 0.2s;
-        }
-        .score-ball:hover { transform: scale(1.1); }
-        
-        .modal { transition: opacity 0.25s ease; }
-        body.modal-active { overflow-x: hidden; overflow-y: visible !important; }
+        /* Modern Scrollbar */
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
+        .dark ::-webkit-scrollbar-thumb { background: #334155; }
 
-        /* Loading Overlay Styling */
-        #globalLoader {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #0f172a; 
-            z-index: 9999;
-            display: flex; flex-direction: column; justify-content: center; align-items: center;
-            color: white; transition: opacity 0.5s ease-out;
+        /* Glassmorphism Utilities */
+        .glass {
+            background: rgba(255, 255, 255, 0.85);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.3);
         }
-        
-        /* Audio Wave Animation */
-        .audio-wave { display: inline-flex; align-items: center; height: 20px; gap: 2px; }
-        .audio-wave span { display: block; width: 3px; height: 100%; background-color: #22c55e; animation: audio-wave 1s infinite ease-in-out; }
-        .audio-wave span:nth-child(1) { animation-delay: 0.0s; height: 60%; }
-        .audio-wave span:nth-child(2) { animation-delay: 0.1s; height: 30%; }
-        .audio-wave span:nth-child(3) { animation-delay: 0.2s; height: 100%; }
-        .audio-wave span:nth-child(4) { animation-delay: 0.3s; height: 50%; }
-        @keyframes audio-wave { 0%, 100% { transform: scaleY(1); } 50% { transform: scaleY(0.5); } }
-
-        /* --- MODERN EVENT OVERLAY ANIMATIONS --- */
-        #eventOverlay {
-            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: rgba(0,0,0,0.95);
-            display: flex; justify-content: center; align-items: center;
-            z-index: 10000; opacity: 0; pointer-events: none;
-            transition: opacity 0.4s ease; flex-direction: column; overflow: hidden;
-        }
-        #eventOverlay.active { opacity: 1; pointer-events: auto; }
-
-        .stadium-bg::before {
-            content: ''; position: absolute; top: 0; left: 0; width: 100%; height: 100%;
-            background: url('https://images.unsplash.com/photo-1540747913346-19e32dc3e97e?ixlib=rb-1.2.1&auto=format&fit=crop&w=1920&q=80') no-repeat center center;
-            background-size: cover; opacity: 0.4; transform: scale(1.1);
-            animation: slowZoom 4s infinite alternate; z-index: 0;
-        }
-        @keyframes slowZoom { from { transform: scale(1.1); } to { transform: scale(1.2); } }
-
-        .event-content { text-align: center; transform: scale(0.5); transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1); position: relative; z-index: 2; }
-        #eventOverlay.active .event-content { transform: scale(1); }
-
-        .big-text {
-            font-family: 'Oswald', sans-serif; font-size: 8rem; font-weight: 900; line-height: 1;
-            text-shadow: 0 10px 30px rgba(0,0,0,0.5); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 0.5rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
-        }
-        @media (max-width: 640px) { .big-text { font-size: 5rem; } }
-
-        .event-subtext {
-            color: white; font-size: 1.5rem; letter-spacing: 2px; text-transform: uppercase; font-weight: bold;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 0.5rem 1.5rem;
-            border-radius: 50px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(5px);
-            animation: fadeInUp 0.5s ease-out 0.2s backwards; font-family: 'Hind Siliguri', sans-serif;
+        .dark .glass {
+            background: rgba(30, 41, 59, 0.7); /* Slate 800 with opacity */
+            border: 1px solid rgba(255, 255, 255, 0.05);
         }
 
-        .type-wicket .big-text { background: linear-gradient(to bottom, #ff4d4d, #b71c1c); -webkit-background-clip: text; }
-        .type-4 .big-text { background: linear-gradient(to bottom, #2196f3, #0d47a1); -webkit-background-clip: text; }
-        .type-6 .big-text { background: linear-gradient(to bottom, #4caf50, #1b5e20); -webkit-background-clip: text; }
-        .type-extra .big-text { background: linear-gradient(to bottom, #ffca28, #ff6f00); -webkit-background-clip: text; font-size: 5rem; }
+        .glass-card {
+            background: linear-gradient(135deg, rgba(255,255,255,1) 0%, rgba(248,250,252,1) 100%);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.05), 0 4px 6px -2px rgba(0, 0, 0, 0.025);
+        }
+        .dark .glass-card {
+            background: linear-gradient(135deg, rgba(30,41,59,1) 0%, rgba(15,23,42,1) 100%);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.3);
+        }
 
-        .event-bg-pulse {
-            position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100vw; height: 100vw;
-            border-radius: 50%; z-index: 1; animation: bgPulse 2s infinite;
-        }
-        @keyframes bgPulse {
-            0% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.8); }
-            50% { opacity: 0.6; transform: translate(-50%, -50%) scale(1.1); }
-            100% { opacity: 0.3; transform: translate(-50%, -50%) scale(0.8); }
-        }
-        @keyframes fadeInUp { from { opacity: 0; transform: translateY(30px); } to { opacity: 1; transform: translateY(0); } }
+        /* Bottom Nav Active State indicator */
+        .nav-item.active i { color: #10b981; transform: translateY(-2px); }
+        .nav-item.active span { color: #10b981; font-weight: 600; }
+        .nav-item i { transition: all 0.3s ease; }
 
-        /* Win Probability Bar Styles */
-        .win-bar-container { height: 12px; border-radius: 6px; overflow: hidden; display: flex; background: #e5e7eb; margin-top: 12px; }
-        .win-bar-team-a { height: 100%; background: linear-gradient(90deg, #3b82f6, #2563eb); transition: width 1s ease; }
-        .win-bar-team-b { height: 100%; background: linear-gradient(90deg, #f59e0b, #d97706); transition: width 1s ease; }
+        /* View Transitions */
+        .view-section { animation: fadeIn 0.4s ease-out; }
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
 
-        /* --- TOAST NOTIFICATIONS --- */
-        #toast-container {
-            position: fixed; bottom: 20px; right: 20px; z-index: 11000;
-            display: flex; flex-direction: column; gap: 10px;
-            pointer-events: none;
-            width: 90%; max-width: 400px; /* Better mobile width */
+        /* Score Ball */
+        .ball-circle {
+            width: 32px; height: 32px;
+            display: flex; align-items: center; justify-content: center;
+            border-radius: 50%; font-size: 0.75rem; font-weight: 700;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
         }
-        .toast-item {
-            pointer-events: auto;
-            width: 100%;
-            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-            backdrop-filter: blur(8px);
-        }
-        .toast-progress {
-            height: 3px;
-            background: rgba(255,255,255,0.7);
-            width: 100%;
-            animation: toastTimer 4s linear forwards;
-        }
-        @keyframes toastTimer { from { width: 100%; } to { width: 0%; } }
 
-        /* Commentary Feed Styles */
-        .comm-item { position: relative; padding-left: 20px; margin-bottom: 12px; }
-        .comm-item::before { content: ''; position: absolute; left: 6px; top: 8px; width: 2px; height: 100%; background: #e5e7eb; }
-        .comm-item:last-child::before { display: none; }
-        .comm-ball { width: 24px; height: 24px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; font-weight: bold; position: absolute; left: -5px; top: 0; z-index: 10; }
-        .comm-ball.run-4 { background: #3b82f6; color: white; border: 2px solid white; box-shadow: 0 0 0 1px #3b82f6; }
-        .comm-ball.run-6 { background: #22c55e; color: white; border: 2px solid white; box-shadow: 0 0 0 1px #22c55e; }
-        .comm-ball.run-w { background: #ef4444; color: white; border: 2px solid white; box-shadow: 0 0 0 1px #ef4444; }
-        .comm-ball.run-normal { background: #f3f4f6; color: #374151; border: 2px solid white; box-shadow: 0 0 0 1px #d1d5db; }
-        .dark .comm-ball.run-normal { background: #374151; color: #e5e7eb; border-color: #1f2937; box-shadow: 0 0 0 1px #4b5563; }
-        
-        /* Fan Poll Bar */
-        .poll-bar-container { position: relative; height: 40px; border-radius: 8px; overflow: hidden; background: #e5e7eb; cursor: pointer; display: flex; }
-        .poll-fill { height: 100%; transition: width 0.5s cubic-bezier(0.4, 0, 0.2, 1); display: flex; align-items: center; justify-content: center; font-size: 0.8rem; font-weight: bold; color: white; text-shadow: 0 1px 2px rgba(0,0,0,0.3); }
-        .poll-left { background: #3b82f6; }
-        .poll-right { background: #f59e0b; }
-        .poll-vs-icon { position: absolute; left: 50%; top: 50%; transform: translate(-50%, -50%); background: white; border-radius: 50%; width: 24px; height: 24px; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: bold; color: #6b7280; box-shadow: 0 2px 4px rgba(0,0,0,0.1); z-index: 5; }
-        .dark .poll-vs-icon { background: #1f2937; color: #9ca3af; }
+        /* Toast Animation */
+        .toast-enter { animation: slideInRight 0.3s cubic-bezier(0.68, -0.55, 0.27, 1.55) forwards; }
+        .toast-exit { animation: fadeOutRight 0.3s forwards; }
+        @keyframes slideInRight { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
+        @keyframes fadeOutRight { to { transform: translateX(100%); opacity: 0; } }
+
+        /* Event Overlay Text */
+        .big-impact-text {
+            font-family: 'Oswald', sans-serif;
+            font-size: 8rem; line-height: 1; font-weight: 700;
+            text-shadow: 0 10px 30px rgba(0,0,0,0.5);
+            background: linear-gradient(to bottom, #fff 0%, #cbd5e1 100%);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            transform: scale(0); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        .active .big-impact-text { transform: scale(1); }
     </style>
 </head>
-<body class="bg-gray-100 dark:bg-gray-900 text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-200">
+<body class="bg-gray-50 dark:bg-app-bg text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-300 font-sans pb-24 selection:bg-green-500 selection:text-white">
 
-    <!-- Global Loader with Modern Double Ring -->
-    <div id="globalLoader">
-        <div class="relative flex justify-center items-center mb-6">
-            <!-- Outer Ring (Green) -->
-            <div class="absolute w-32 h-32 border-4 border-t-green-500 border-b-green-500 border-l-transparent border-r-transparent rounded-full animate-spin-slow"></div>
-            <!-- Inner Ring (Blue - Reverse) -->
-            <div class="absolute w-28 h-28 border-4 border-r-blue-500 border-l-blue-500 border-t-transparent border-b-transparent rounded-full animate-spin-reverse"></div>
-            <!-- Logo Image -->
-            <img src="https://i.postimg.cc/FRMTxVb2/app-icon-android.png" alt="Logo" class="w-20 h-20 rounded-full object-cover shadow-2xl relative z-10 p-1 bg-white/10 backdrop-blur-sm">
+    <!-- Global Loader -->
+    <div id="globalLoader" class="fixed inset-0 z-[9999] bg-white dark:bg-app-bg flex flex-col items-center justify-center transition-opacity duration-500">
+        <div class="relative w-24 h-24 mb-4">
+            <div class="absolute inset-0 border-4 border-gray-200 dark:border-gray-800 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-green-500 rounded-full border-t-transparent animate-spin"></div>
+            <img src="https://i.postimg.cc/FRMTxVb2/app-icon-android.png" class="absolute inset-2 w-20 h-20 rounded-full object-cover p-1">
         </div>
-        
-        <h2 class="text-3xl font-bold tracking-[0.2em] font-display text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-1 drop-shadow-md">CRICSCORE PRO</h2>
-        <p class="text-gray-400 text-xs font-medium uppercase tracking-widest mt-2 animate-pulse font-sans">লোডিং হচ্ছে...</p>
+        <h1 class="text-2xl font-display font-bold tracking-widest text-transparent bg-clip-text bg-gradient-to-r from-green-500 to-emerald-700">CRICSCORE</h1>
+        <p class="text-xs text-gray-400 mt-2 uppercase tracking-widest">Loading Live Data...</p>
     </div>
 
-    <!-- Event Overlay -->
-    <div id="eventOverlay">
-        <div class="event-bg-pulse"></div>
-        <div class="event-content">
-            <div id="eventBigText" class="big-text">6</div>
-            <div id="eventSubText" class="event-subtext">বিশাল ছক্কা!</div>
+    <!-- Celebration Overlay (Confetti & Big Text) -->
+    <div id="eventOverlay" class="fixed inset-0 z-[5000] pointer-events-none flex items-center justify-center bg-black/80 opacity-0 transition-opacity duration-300 backdrop-blur-sm">
+        <div class="text-center transform scale-90 transition-transform duration-300" id="eventContent">
+            <div id="eventText" class="big-impact-text">6</div>
+            <div id="eventSub" class="text-2xl font-bold text-white uppercase tracking-[0.5em] mt-4 opacity-0 transition-opacity duration-500 delay-100">MAXIMUM</div>
         </div>
     </div>
 
-    <!-- Toast Container -->
-    <div id="toast-container"></div>
+    <!-- Toast Notifications Container -->
+    <div id="toastContainer" class="fixed top-4 left-4 right-4 z-[6000] flex flex-col gap-2 pointer-events-none sm:left-auto sm:w-96 sm:right-4"></div>
 
-    <!-- Navigation -->
-    <nav class="bg-cricket-dark text-white shadow-lg sticky top-0 z-50">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div class="flex justify-between h-16">
-                <div class="flex items-center cursor-pointer" onclick="switchView('live')">
-                    <!-- Navbar Logo -->
-                    <img src="https://i.postimg.cc/FRMTxVb2/app-icon-android.png" alt="Logo" class="h-9 w-9 mr-3 rounded-lg shadow-sm border border-white/20">
-                    <span class="font-bold text-xl tracking-tight font-display">CricScore Live</span>
+    <!-- Header -->
+    <header class="fixed top-0 left-0 w-full z-40 glass shadow-sm transition-all duration-300">
+        <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
+            <div class="flex items-center gap-3" onclick="switchView('live')">
+                <div class="relative">
+                    <img src="https://i.postimg.cc/FRMTxVb2/app-icon-android.png" class="w-9 h-9 rounded-xl shadow-lg border border-white/10">
+                    <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse"></div>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <button id="notifBtn" onclick="openNotifSettings()" class="p-2 rounded hover:bg-white/10 text-gray-400 transition relative" title="সেটিংস">
-                        <i class="fas fa-bell"></i>
-                        <span id="notifBadge" class="hidden absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full border border-cricket-dark"></span>
-                    </button>
-                    <button id="themeToggle" class="p-2 rounded hover:bg-white/10 transition" title="থিম পরিবর্তন">
-                        <i class="fas fa-moon"></i>
-                    </button>
-                </div>
+                <span class="font-display font-bold text-xl tracking-tight text-gray-800 dark:text-white">CricScore<span class="text-green-500">.</span></span>
+            </div>
+            <div class="flex items-center gap-2">
+                <button onclick="toggleTheme()" class="w-10 h-10 rounded-full flex items-center justify-center bg-gray-100 dark:bg-gray-800 text-gray-600 dark:text-yellow-400 hover:bg-gray-200 dark:hover:bg-gray-700 transition-colors">
+                    <i class="fas fa-moon dark:hidden"></i>
+                    <i class="fas fa-sun hidden dark:block"></i>
+                </button>
             </div>
         </div>
-    </nav>
+    </header>
 
-    <div id="appContainer" class="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8 py-6">
+    <!-- Main Content -->
+    <main id="mainContainer" class="pt-20 px-4 max-w-3xl mx-auto min-h-screen">
         
-        <!-- Navigation Tabs -->
-        <div class="flex justify-center sm:justify-start overflow-x-auto space-x-2 mb-6 hide-scroll pb-2">
-            <button onclick="switchView('live')" class="nav-btn bg-white dark:bg-gray-800 px-6 py-2 rounded-full shadow hover:bg-green-50 dark:hover:bg-gray-700 whitespace-nowrap active-nav-btn font-medium text-sm" data-target="live">
-                <i class="fas fa-broadcast-tower text-red-500 mr-2"></i><span>লাইভ ম্যাচ</span>
-            </button>
-            <button onclick="switchView('tournaments')" class="nav-btn bg-white dark:bg-gray-800 px-6 py-2 rounded-full shadow hover:bg-green-50 dark:hover:bg-gray-700 whitespace-nowrap font-medium text-sm" data-target="tournaments">
-                <i class="fas fa-trophy text-yellow-500 mr-2"></i><span>টুর্নামেন্ট</span>
-            </button>
-            <button onclick="switchView('players')" class="nav-btn bg-white dark:bg-gray-800 px-6 py-2 rounded-full shadow hover:bg-green-50 dark:hover:bg-gray-700 whitespace-nowrap font-medium text-sm" data-target="players">
-                <i class="fas fa-users text-purple-500 mr-2"></i><span>প্লেয়ার স্ট্যাটস</span>
-            </button>
-        </div>
-
-        <!-- Live Matches List View -->
+        <!-- Live Matches View -->
         <div id="liveView" class="view-section">
-            <h2 class="text-2xl font-bold mb-4 border-l-4 border-green-500 pl-3 font-display">ম্যাচ সেন্টার</h2>
-            <div id="matchesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                <div class="text-center py-10 text-gray-500 col-span-full">
-                    <i class="fas fa-spinner fa-spin text-3xl"></i>
-                    <p class="mt-2">লাইভ ফিড লোড হচ্ছে...</p>
+            <div class="flex justify-between items-end mb-6">
+                <div>
+                    <h2 class="text-2xl font-bold font-display text-gray-800 dark:text-white">Live Matches</h2>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Real-time scores & updates</p>
+                </div>
+                <span class="text-xs font-bold bg-red-500/10 text-red-500 px-3 py-1 rounded-full border border-red-500/20 flex items-center gap-1">
+                    <span class="w-2 h-2 bg-red-500 rounded-full animate-pulse"></span> LIVE
+                </span>
+            </div>
+            
+            <div id="matchesList" class="space-y-4 pb-20">
+                <!-- Loading Skeleton -->
+                <div class="glass-card rounded-2xl p-4 animate-pulse">
+                    <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
+                    <div class="flex justify-between items-center mb-6">
+                        <div class="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                        <div class="h-6 bg-gray-200 dark:bg-gray-700 rounded w-1/3"></div>
+                        <div class="h-10 w-10 bg-gray-200 dark:bg-gray-700 rounded-full"></div>
+                    </div>
                 </div>
             </div>
-        </div>
-
-        <!-- Player Stats View -->
-        <div id="playersView" class="view-section hidden">
-            <h2 class="text-2xl font-bold mb-4 border-l-4 border-purple-500 pl-3 font-display">খেলোয়াড়ের পরিসংখ্যান</h2>
-            <div class="mb-4">
-                <input type="text" id="playerSearch" onkeyup="filterPlayers()" placeholder="খেলোয়াড়ের নাম খুঁজুন..." class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none font-sans text-sm">
-            </div>
-            <div id="playersListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
 
         <!-- Tournaments View -->
         <div id="tournamentsView" class="view-section hidden">
-            <h2 class="text-2xl font-bold mb-4 border-l-4 border-yellow-500 pl-3 font-display">টুর্নামেন্টসমূহ</h2>
-            <div id="tournamentList" class="space-y-4">
-                <p class="text-gray-500 text-center py-8">কোনো একটিভ টুর্নামেন্ট নেই।</p>
+            <h2 class="text-2xl font-bold font-display mb-6 text-gray-800 dark:text-white">Tournaments</h2>
+            <div class="glass-card rounded-2xl p-8 text-center border-l-4 border-yellow-500">
+                <div class="w-16 h-16 bg-yellow-100 dark:bg-yellow-900/30 rounded-full flex items-center justify-center mx-auto mb-4 text-yellow-600 dark:text-yellow-400 text-2xl">
+                    <i class="fas fa-trophy"></i>
+                </div>
+                <h3 class="font-bold text-lg mb-2">No Active Tournaments</h3>
+                <p class="text-sm text-gray-500">Check back later for upcoming leagues.</p>
             </div>
         </div>
 
-        <!-- Match Detail / Scoreboard View -->
-        <div id="matchDetailView" class="view-section hidden">
-            <div class="flex justify-between items-center mb-4">
-                <button onclick="switchView('live')" class="text-sm text-gray-500 hover:text-green-600 flex items-center transition font-medium">
-                    <i class="fas fa-arrow-left mr-1"></i> ফিরে যান
-                </button>
-                <button id="audioToggleBtn" onclick="toggleAudio()" class="flex items-center space-x-2 bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow text-sm font-bold text-gray-500 hover:text-green-600 border dark:border-gray-700 transition hover:shadow-md">
-                    <i class="fas fa-volume-mute text-lg" id="audioIcon"></i>
-                    <span id="audioText" class="hidden sm:inline">ধারাভাষ্য বন্ধ</span>
-                    <div id="audioVisualizer" class="audio-wave hidden"><span></span><span></span><span></span><span></span></div>
-                </button>
+        <!-- Players View -->
+        <div id="playersView" class="view-section hidden">
+            <h2 class="text-2xl font-bold font-display mb-4 text-gray-800 dark:text-white">Player Stats</h2>
+            <div class="relative mb-6">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" id="playerSearch" onkeyup="filterPlayers()" placeholder="Search players..." 
+                    class="w-full pl-10 pr-4 py-3 bg-white dark:bg-gray-800 border-none rounded-xl shadow-sm focus:ring-2 focus:ring-green-500 outline-none transition text-sm">
             </div>
-            
-            <!-- Main Score Header -->
-            <div class="glass-panel rounded-xl shadow-lg overflow-hidden mb-6 border-t-4 border-cricket-green relative">
-                <div class="absolute top-0 right-0 -mt-10 -mr-10 w-40 h-40 bg-green-500 opacity-5 rounded-full blur-3xl"></div>
+            <div id="playersListContainer" class="grid grid-cols-1 sm:grid-cols-2 gap-4 pb-20"></div>
+        </div>
+
+        <!-- Match Detail View -->
+        <div id="matchDetailView" class="view-section hidden pb-24">
+            <!-- Back Button Header override -->
+            <button onclick="switchView('live')" class="mb-4 flex items-center text-sm font-medium text-gray-500 hover:text-green-500 transition">
+                <i class="fas fa-arrow-left mr-2"></i> Back to Matches
+            </button>
+
+            <!-- Main Score Card -->
+            <div class="glass-card rounded-3xl overflow-hidden relative mb-6 border border-gray-100 dark:border-gray-700 shadow-xl">
+                <!-- Background Decoration -->
+                <div class="absolute top-0 right-0 w-64 h-64 bg-green-500/10 rounded-full blur-3xl -mr-16 -mt-16 pointer-events-none"></div>
                 
-                <div class="p-4 sm:p-6 relative z-10">
-                    <div class="flex justify-between items-start mb-2">
-                        <span id="matchStatusBadge" class="bg-red-500 text-white text-[10px] px-2 py-1 rounded-full uppercase tracking-wider font-bold animate-pulse">LIVE</span>
+                <div class="p-6 relative z-10">
+                    <div class="flex justify-between items-start mb-4">
+                        <span id="matchStatusBadge" class="bg-red-500 text-white text-[10px] px-2.5 py-1 rounded-md uppercase font-bold tracking-wider shadow-sm animate-pulse">LIVE</span>
                         <div class="text-right">
-                             <span id="matchTournamentName" class="text-sm text-gray-500 font-medium block">Tournament Name</span>
-                             <span id="matchHostName" class="text-xs text-gray-400 block mt-0.5"></span>
+                             <span id="matchTournamentName" class="text-xs font-bold text-gray-500 uppercase tracking-wide">Tournament</span>
                         </div>
-                    </div>
-                    
-                    <div class="flex justify-between items-center mt-4">
-                        <div class="text-center w-1/3">
-                            <h3 id="teamAName" class="font-bold text-lg sm:text-2xl truncate font-display">Team A</h3>
-                            <p id="teamAScore" class="text-2xl sm:text-4xl font-mono font-bold text-gray-800 dark:text-gray-100 mt-1">-/-</p>
-                            <p id="teamAOvers" class="text-sm text-gray-500 font-medium">0.0 ov</p>
-                        </div>
-                        <div class="text-center w-1/3">
-                            <div class="text-xs text-gray-400 uppercase tracking-widest mb-1 font-bold">VS</div>
-                            <div id="matchResult" class="text-sm font-medium text-green-600 dark:text-green-400 leading-tight">খেলা শুরু হয়েছে</div>
-                        </div>
-                        <div class="text-center w-1/3">
-                            <h3 id="teamBName" class="font-bold text-lg sm:text-2xl truncate font-display">Team B</h3>
-                            <p id="teamBScore" class="text-2xl sm:text-4xl font-mono font-bold text-gray-800 dark:text-gray-100 mt-1">-/-</p>
-                            <p id="teamBOvers" class="text-sm text-gray-500 font-medium">0.0 ov</p>
-                        </div>
-                    </div>
-                    
-                    <div class="mt-4 pt-4 border-t dark:border-gray-700 text-center text-sm flex justify-center items-center flex-wrap gap-2">
-                         <span id="matchCRR" class="bg-gray-100 dark:bg-gray-700 px-3 py-1 rounded-full font-bold text-xs text-gray-600 dark:text-gray-300">CRR: 0.00</span> 
-                         <span id="matchTargetDisplay" class="bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-300 px-3 py-1 rounded-full font-bold text-xs hidden border border-blue-100 dark:border-blue-800">Target: --</span>
-                         <span id="matchEquation" class="text-purple-600 dark:text-purple-400 font-bold hidden px-2">Need 0 runs in 0 balls</span>
                     </div>
 
-                    <!-- Win Probability Widget -->
-                    <div id="winProbContainer" class="hidden px-2 pb-2">
-                        <div class="flex justify-between text-xs font-bold text-gray-500 mt-4 mb-1">
-                            <span>জয়ের সম্ভাবনা: <span id="winProbA">50%</span></span>
-                            <span><span id="winProbB">50%</span></span>
-                        </div>
-                        <div class="win-bar-container">
-                            <div id="winBarA" class="win-bar-team-a" style="width: 50%"></div>
-                            <div id="winBarB" class="win-bar-team-b" style="width: 50%"></div>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <!-- Scorecard Details -->
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
-                <div class="lg:col-span-3 space-y-6">
-                    
-                    <!-- Recent Balls Timeline -->
-                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 overflow-x-auto border-l-4 border-blue-500">
-                        <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center tracking-wider"><i class="fas fa-history mr-2"></i> সাম্প্রতিক বলগুলো</h4>
-                        <div id="recentBallsContainer" class="flex space-x-3 pb-2"></div>
-                   </div>
-
-                    <!-- Fan Poll Widget -->
-                    <div id="fanPollSection" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hidden">
-                         <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center tracking-wider"><i class="fas fa-vote-yea mr-2 text-purple-500"></i> দর্শক পোল: কে জিতবে?</h4>
-                         <div class="poll-bar-container" onclick="votePoll()">
-                             <div id="pollFillLeft" class="poll-fill poll-left" style="width: 50%"></div>
-                             <div class="poll-vs-icon">VS</div>
-                             <div id="pollFillRight" class="poll-fill poll-right" style="width: 50%"></div>
-                         </div>
-                         <p class="text-xs text-center text-gray-400 mt-2">ভোট দিতে ট্যাপ করুন!</p>
-                    </div>
-
-                    <!-- Tabbed Interface -->
-                    <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
-                        <!-- Main Tabs -->
-                        <div class="flex border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-                            <button onclick="switchMainTab('scorecard')" id="main-tab-scorecard" class="flex-1 py-3 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 focus:outline-none uppercase tracking-wide">স্কোরকার্ড</button>
-                            <button onclick="switchMainTab('commentary')" id="main-tab-commentary" class="flex-1 py-3 text-sm font-bold text-gray-500 focus:outline-none hover:text-indigo-600 uppercase tracking-wide">ধারাভাষ্য</button>
-                            <button onclick="switchMainTab('analytics')" id="main-tab-analytics" class="flex-1 py-3 text-sm font-bold text-gray-500 focus:outline-none hover:text-indigo-600 uppercase tracking-wide">অ্যানালিটিক্স</button>
+                    <div class="flex items-center justify-between mt-2">
+                        <div class="text-center w-[40%]">
+                            <h3 id="teamAName" class="font-bold text-lg sm:text-xl font-display leading-tight text-gray-800 dark:text-white truncate">Team A</h3>
+                            <div class="mt-2 text-3xl sm:text-4xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-tight" id="teamAScore">0/0</div>
+                            <div class="text-sm font-medium text-gray-500 mt-1" id="teamAOvers">0.0 ov</div>
                         </div>
                         
-                        <!-- Content: Scorecard -->
-                        <div id="content-scorecard" class="main-tab-content">
-                             <div class="flex border-b dark:border-gray-700 bg-gray-100 dark:bg-gray-800">
-                                <button onclick="switchLiveTab('teamA')" id="live-tab-teamA" class="flex-1 py-2 text-xs font-bold text-indigo-600 bg-white dark:bg-gray-700 shadow-sm rounded-t-lg mx-1 mt-1">Team A</button>
-                                <button onclick="switchLiveTab('teamB')" id="live-tab-teamB" class="flex-1 py-2 text-xs font-bold text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 rounded-t-lg mx-1 mt-1">Team B</button>
-                            </div>
-                            <div class="p-0">
-                                <div id="live-content-teamA" class="w-full"></div>
-                                <div id="live-content-teamB" class="w-full hidden"></div>
-                            </div>
+                        <div class="text-center w-[20%] flex flex-col items-center justify-center">
+                            <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-xs font-bold text-gray-400">VS</div>
                         </div>
 
-                        <!-- Content: Commentary -->
-                        <div id="content-commentary" class="main-tab-content hidden p-4">
-                            <div id="commFeed" class="space-y-2">
-                                <p class="text-center text-gray-400 py-4">তথ্য অপেক্ষা করছে...</p>
-                            </div>
+                        <div class="text-center w-[40%]">
+                            <h3 id="teamBName" class="font-bold text-lg sm:text-xl font-display leading-tight text-gray-800 dark:text-white truncate">Team B</h3>
+                            <div class="mt-2 text-3xl sm:text-4xl font-display font-bold text-gray-900 dark:text-gray-100 tracking-tight" id="teamBScore">0/0</div>
+                            <div class="text-sm font-medium text-gray-500 mt-1" id="teamBOvers">0.0 ov</div>
                         </div>
+                    </div>
 
-                        <!-- Content: Analytics -->
-                        <div id="content-analytics" class="main-tab-content hidden p-4">
-                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                                <!-- Worm Graph -->
-                                <div class="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg">
-                                    <h4 class="text-xs font-bold uppercase text-gray-500 mb-2 text-center">রান রেট তুলনা (ওয়ার্ম)</h4>
-                                    <div class="h-64 relative w-full">
-                                        <canvas id="wormChart"></canvas>
-                                    </div>
-                                </div>
-                                <!-- Partnership -->
-                                <div class="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg">
-                                    <h4 class="text-xs font-bold uppercase text-gray-500 mb-2 text-center">বর্তমান পার্টনারশিপ</h4>
-                                    <div class="h-64 relative w-full flex justify-center">
-                                        <canvas id="partnershipChart"></canvas>
-                                    </div>
-                                    <div id="partnerText" class="text-center text-sm font-bold mt-2 text-gray-600 dark:text-gray-300">লোডিং...</div>
-                                </div>
-                            </div>
+                    <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700/50 flex flex-wrap justify-center gap-3 text-xs font-bold">
+                        <span id="matchResult" class="text-green-600 dark:text-green-400">Match Started</span>
+                        <span id="matchTargetDisplay" class="hidden text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">Target: 0</span>
+                        <span id="matchCRR" class="text-gray-500">CRR: 0.00</span>
+                    </div>
+                </div>
+
+                <!-- Win Probability Bar -->
+                <div id="winProbContainer" class="bg-gray-100 dark:bg-gray-800/50 h-1.5 w-full flex relative hidden">
+                    <div id="winBarA" class="h-full bg-blue-500 transition-all duration-1000" style="width: 50%"></div>
+                    <div id="winBarB" class="h-full bg-orange-500 transition-all duration-1000" style="width: 50%"></div>
+                    <!-- Center Marker -->
+                    <div class="absolute top-0 left-1/2 -translate-x-1/2 w-0.5 h-full bg-white dark:bg-gray-900 z-10"></div>
+                </div>
+            </div>
+
+            <!-- Recent Balls (Horizontal Scroll) -->
+            <div class="mb-6">
+                <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Recent Deliveries</h4>
+                <div id="recentBallsContainer" class="flex gap-2 overflow-x-auto pb-4 hide-scrollbar snap-x">
+                    <!-- Balls injected by JS -->
+                </div>
+            </div>
+
+            <!-- Tabs: Scorecard / Commentary -->
+            <div class="bg-white dark:bg-gray-800 rounded-2xl shadow-sm border border-gray-100 dark:border-gray-700 overflow-hidden">
+                <div class="flex border-b border-gray-100 dark:border-gray-700">
+                    <button onclick="switchMainTab('scorecard')" id="tab-scorecard" class="flex-1 py-4 text-sm font-bold text-green-500 border-b-2 border-green-500 bg-green-50/50 dark:bg-green-900/10 transition-colors">SCORECARD</button>
+                    <button onclick="switchMainTab('commentary')" id="tab-commentary" class="flex-1 py-4 text-sm font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">COMMENTARY</button>
+                    <button onclick="switchMainTab('analytics')" id="tab-analytics" class="flex-1 py-4 text-sm font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors">ANALYTICS</button>
+                </div>
+
+                <div class="p-0 min-h-[300px]">
+                    <!-- Scorecard Tab -->
+                    <div id="content-scorecard" class="tab-content animate-pop-in">
+                        <div class="flex bg-gray-50 dark:bg-gray-700/30 p-1 m-3 rounded-lg">
+                            <button onclick="switchLiveTab('teamA')" id="btn-teamA" class="flex-1 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-gray-600 shadow-sm text-gray-800 dark:text-white transition-all">Team A</button>
+                            <button onclick="switchLiveTab('teamB')" id="btn-teamB" class="flex-1 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all">Team B</button>
+                        </div>
+                        <div id="live-content-teamA" class="p-3"></div>
+                        <div id="live-content-teamB" class="p-3 hidden"></div>
+                    </div>
+
+                    <!-- Commentary Tab -->
+                    <div id="content-commentary" class="tab-content hidden animate-pop-in p-4">
+                        <div id="commFeed" class="space-y-4"></div>
+                    </div>
+
+                    <!-- Analytics Tab -->
+                    <div id="content-analytics" class="tab-content hidden animate-pop-in p-4">
+                        <div class="bg-gray-50 dark:bg-gray-900/50 p-4 rounded-xl mb-4">
+                            <h4 class="text-xs font-bold uppercase text-gray-400 mb-4 text-center">Run Rate Comparison</h4>
+                            <div class="h-48 w-full"><canvas id="wormChart"></canvas></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
-    </div>
+    </main>
 
-    <!-- Notification Settings Modal -->
-    <div id="notifSettingsModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-[12000]">
-        <div class="modal-overlay absolute w-full h-full bg-black/60 backdrop-blur-sm" onclick="closeModal('notifSettingsModal')"></div>
-        <div class="modal-container bg-white dark:bg-gray-800 w-11/12 max-w-sm mx-auto rounded-xl shadow-2xl z-50 overflow-hidden transform transition-all scale-100">
-            <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-700/50">
-                <h3 class="font-bold text-lg font-display"><i class="fas fa-bell text-yellow-500 mr-2"></i>নোটিফিকেশন সেটিংস</h3>
-                <button onclick="closeModal('notifSettingsModal')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
-            </div>
-            <div class="p-6 space-y-4">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="font-bold text-sm">ডেস্কটপ নোটিফিকেশন</p>
-                        <p class="text-xs text-gray-500">ব্রাউজার পপআপ দেখান</p>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="set-desktop" class="sr-only peer" onchange="toggleNotifSetting('desktop')">
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
-                    </label>
-                </div>
-                
-                <div class="flex items-center justify-between">
-                    <div>
-                        <p class="font-bold text-sm">ইন-অ্যাপ টোস্ট</p>
-                        <p class="text-xs text-gray-500">অ্যাপের ভেতরে পপআপ দেখান</p>
-                    </div>
-                    <label class="relative inline-flex items-center cursor-pointer">
-                        <input type="checkbox" id="set-toast" class="sr-only peer" checked onchange="toggleNotifSetting('toast')">
-                        <div class="w-11 h-6 bg-gray-200 peer-focus:outline-none rounded-full peer dark:bg-gray-700 peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all dark:border-gray-600 peer-checked:bg-green-600"></div>
-                    </label>
-                </div>
-
-                <hr class="dark:border-gray-700 my-2">
-                <p class="text-xs font-bold uppercase text-gray-400 tracking-wider mb-2">ট্রিগার</p>
-
-                <div class="flex items-center justify-between">
-                    <span class="text-sm"><i class="fas fa-skull text-red-500 w-6"></i> উইকেট</span>
-                    <input type="checkbox" id="set-wickets" class="w-4 h-4 text-green-600 rounded" checked onchange="toggleNotifSetting('wickets')">
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm"><i class="fas fa-star text-yellow-500 w-6"></i> বাউন্ডারি (৪/৬)</span>
-                    <input type="checkbox" id="set-boundaries" class="w-4 h-4 text-green-600 rounded" checked onchange="toggleNotifSetting('boundaries')">
-                </div>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm"><i class="fas fa-flag text-blue-500 w-6"></i> এক্সট্রা/মাইলস্টোন</span>
-                    <input type="checkbox" id="set-extras" class="w-4 h-4 text-green-600 rounded" onchange="toggleNotifSetting('extras')">
-                </div>
-            </div>
-            <div class="p-4 bg-gray-50 dark:bg-gray-700/50 text-center">
-                 <button onclick="requestNativePermission()" id="permBtn" class="text-xs text-blue-500 hover:underline">ব্রাউজার পারমিশন চেক করুন</button>
-            </div>
+    <!-- Bottom Navigation Bar (Mobile) -->
+    <nav class="fixed bottom-0 left-0 w-full bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-t border-gray-200 dark:border-gray-800 z-50 pb-safe">
+        <div class="max-w-md mx-auto flex justify-around items-center h-16">
+            <button onclick="switchView('live')" class="nav-item active flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-green-500 transition-colors" data-target="live">
+                <i class="fas fa-tower-broadcast text-lg mb-1"></i>
+                <span class="text-[10px]">Matches</span>
+            </button>
+            <button onclick="switchView('tournaments')" class="nav-item flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-green-500 transition-colors" data-target="tournaments">
+                <i class="fas fa-trophy text-lg mb-1"></i>
+                <span class="text-[10px]">Leagues</span>
+            </button>
+            <button onclick="switchView('players')" class="nav-item flex flex-col items-center justify-center w-full h-full text-gray-400 hover:text-green-500 transition-colors" data-target="players">
+                <i class="fas fa-users text-lg mb-1"></i>
+                <span class="text-[10px]">Stats</span>
+            </button>
         </div>
-    </div>
+    </nav>
 
     <!-- Player Profile Modal -->
-    <div id="playerProfileModal" class="modal opacity-0 pointer-events-none fixed w-full h-full top-0 left-0 flex items-center justify-center z-50">
-        <div class="modal-overlay absolute w-full h-full bg-gray-900 opacity-90 backdrop-blur-sm" onclick="closeModal('playerProfileModal')"></div>
-        <div class="modal-container bg-white dark:bg-gray-800 w-11/12 md:max-w-lg mx-auto rounded-xl shadow-2xl z-50 overflow-y-auto max-h-[90vh]">
-            <div class="modal-content text-left">
-                <div class="relative bg-gradient-to-r from-purple-600 to-indigo-600 h-32 p-6 flex items-end">
-                    <div class="absolute top-0 left-0 w-full h-full bg-black opacity-10" style="background-image: url('data:image/svg+xml,%3Csvg width=\'20\' height=\'20\' viewBox=\'0 0 20 20\' xmlns=\'http://www.w3.org/2000/svg\'%3E%3Cg fill=\'%23ffffff\' fill-opacity=\'0.2\' fill-rule=\'evenodd\'%3E%3Ccircle cx=\'3\' cy=\'3\' r=\'3\'/%3E%3Ccircle cx=\'13\' cy=\'13\' r=\'3\'/%3E%3C/g%3E%3C/svg%3E');"></div>
-                    <div class="absolute top-4 right-4 text-white cursor-pointer hover:bg-white/20 rounded-full p-2 transition" onclick="closeModal('playerProfileModal')"><i class="fas fa-times text-xl"></i></div>
-                    <div class="translate-y-1/2 flex items-end relative group">
-                        <div class="w-24 h-24 bg-white dark:bg-gray-700 rounded-full border-4 border-white dark:border-gray-800 flex items-center justify-center text-3xl font-bold text-gray-400 shadow-lg overflow-hidden" id="profileAvatar">P</div>
-                    </div>
+    <div id="playerModal" class="fixed inset-0 z-[7000] pointer-events-none flex items-end sm:items-center justify-center sm:p-4">
+        <div class="absolute inset-0 bg-black/60 backdrop-blur-sm opacity-0 transition-opacity duration-300" id="modalOverlay" onclick="closePlayerModal()"></div>
+        <div class="bg-white dark:bg-gray-800 w-full sm:max-w-md sm:rounded-2xl rounded-t-2xl shadow-2xl transform translate-y-full transition-transform duration-300 overflow-hidden flex flex-col max-h-[85vh]" id="modalContent">
+            
+            <!-- Modal Header -->
+            <div class="relative h-32 bg-gradient-to-r from-green-500 to-emerald-700 flex items-center justify-center">
+                <button onclick="closePlayerModal()" class="absolute top-4 right-4 text-white/80 hover:text-white bg-black/10 hover:bg-black/20 rounded-full w-8 h-8 flex items-center justify-center transition"><i class="fas fa-times"></i></button>
+                <div class="absolute -bottom-10 left-1/2 -translate-x-1/2">
+                    <div id="modalAvatar" class="w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 bg-gray-200 flex items-center justify-center text-2xl font-bold text-gray-400 shadow-md overflow-hidden"></div>
                 </div>
-                <div class="pt-16 px-6 pb-6">
-                    <div class="mb-4">
-                        <h2 id="profileName" class="text-3xl font-bold text-gray-800 dark:text-white leading-none font-display">Player Name</h2>
-                        <span id="profileUniqueId" class="text-xs text-gray-400 font-mono mt-1 block tracking-wider bg-gray-100 dark:bg-gray-700 w-fit px-2 py-0.5 rounded">ID: --</span>
-                    </div>
-                    <p class="text-sm text-gray-500 mb-6 font-bold uppercase tracking-wide border-b pb-2">ক্যারিয়ার পরিসংখ্যান</p>
-                    <div class="grid grid-cols-2 gap-4 text-center">
-                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border dark:border-gray-700 col-span-2 sm:col-span-1 shadow-sm">
-                            <h4 class="text-purple-600 font-bold mb-3 border-b pb-1 flex justify-center items-center text-sm tracking-wider"><i class="fas fa-baseball-bat-ball mr-2"></i> ব্যাটিং</h4>
-                            <div class="grid grid-cols-2 gap-y-3 text-sm">
-                                <div class="text-gray-500 text-left pl-2">ম্যাচ</div><div id="profMatches" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">রান</div><div id="profRuns" class="font-bold text-xl text-right pr-2 text-gray-800 dark:text-white">0</div>
-                                <div class="text-gray-500 text-left pl-2">বল</div><div id="profBalls" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">সর্বোচ্চ</div><div id="profHS" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">স্ট্রাইক রেট</div><div id="profSR" class="font-bold text-green-600 text-right pr-2">0.00</div>
-                                <div class="text-gray-500 text-left pl-2">৪/৬</div><div id="profBoundaries" class="font-bold text-right pr-2">0 / 0</div>
-                            </div>
+            </div>
+
+            <!-- Modal Body -->
+            <div class="pt-12 p-6 overflow-y-auto">
+                <div class="text-center mb-6">
+                    <h2 id="modalName" class="text-2xl font-bold font-display text-gray-800 dark:text-white">Player Name</h2>
+                    <span id="modalId" class="text-xs font-mono text-gray-400 bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded">ID: --</span>
+                </div>
+
+                <div class="grid grid-cols-2 gap-4">
+                    <!-- Batting Card -->
+                    <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center gap-2 mb-3 text-emerald-500 font-bold text-xs uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-2">
+                            <i class="fas fa-baseball-bat-ball"></i> Batting
                         </div>
-                        <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border dark:border-gray-700 col-span-2 sm:col-span-1 shadow-sm">
-                            <h4 class="text-blue-600 font-bold mb-3 border-b pb-1 flex justify-center items-center text-sm tracking-wider"><i class="fas fa-bullseye mr-2"></i> বোলিং</h4>
-                            <div class="grid grid-cols-2 gap-y-3 text-sm">
-                                <div class="text-gray-500 text-left pl-2">ইনিংস</div><div id="profBowlInns" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">উইকেট</div><div id="profWickets" class="font-bold text-xl text-right pr-2 text-gray-800 dark:text-white">0</div>
-                                <div class="text-gray-500 text-left pl-2">ওভার</div><div id="profOvers" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">রান</div><div id="profRunsConceded" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">ইকোনমি</div><div id="profEco" class="font-bold text-red-500 text-right pr-2">0.00</div>
-                                <div class="text-gray-500 text-left pl-2">সেরা</div><div id="profBestBowl" class="font-bold text-right pr-2">-/-</div>
-                            </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between"><span class="text-gray-500">Runs</span> <span id="mRuns" class="font-bold dark:text-gray-200">0</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Balls</span> <span id="mBalls" class="font-bold dark:text-gray-200">0</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Highest</span> <span id="mHS" class="font-bold dark:text-gray-200">0</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">SR</span> <span id="mSR" class="font-bold text-emerald-500">0.00</span></div>
+                        </div>
+                    </div>
+                    <!-- Bowling Card -->
+                    <div class="bg-gray-50 dark:bg-gray-700/30 rounded-xl p-4 border border-gray-100 dark:border-gray-700">
+                        <div class="flex items-center gap-2 mb-3 text-indigo-500 font-bold text-xs uppercase tracking-wider border-b border-gray-200 dark:border-gray-600 pb-2">
+                            <i class="fas fa-bullseye"></i> Bowling
+                        </div>
+                        <div class="space-y-2 text-sm">
+                            <div class="flex justify-between"><span class="text-gray-500">Wickets</span> <span id="mWickets" class="font-bold dark:text-gray-200">0</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Overs</span> <span id="mOvers" class="font-bold dark:text-gray-200">0.0</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Economy</span> <span id="mEco" class="font-bold text-red-500">0.00</span></div>
+                            <div class="flex justify-between"><span class="text-gray-500">Best</span> <span id="mBest" class="font-bold dark:text-gray-200">0/0</span></div>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </div>
-    
+
+    <!-- JS Module -->
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
         import { getAuth, signInAnonymously } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
         import { getFirestore, collection, doc, onSnapshot, query, orderBy, getDocs } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
 
-        // CONFIG
+        // FIREBASE CONFIG
         const firebaseConfig = {
           apiKey: "AIzaSyDUP-ot4yX5Bg3GNpfDrZ6NOL8c5YFdoyo",
           authDomain: "live-score-49270.firebaseapp.com",
@@ -590,531 +413,177 @@
         let currentMatchId = null; 
         let currentMatchUnsubscribe = null;
         let matchesListUnsubscribe = null; 
-        let currentMatchData = null; 
-        let currentMatchState = null; 
-        let matchTimerInterval = null; 
+        let currentMatchState = null;
         let wormChartInstance = null;
-        let partnerChartInstance = null;
-        
-        let isAudioEnabled = false;
         let lastProcessedBallId = 0;
-        let preferredVoice = null;
-        const synth = window.speechSynthesis;
-        let currentAudio = null; // For Google TTS Fallback
-        
-        // Audio & Commentary State
-        let idleCommentaryInterval = null;
-        let lastSpeechTime = 0;
-        
-        // Settings State
-        let notifSettings = {
-            desktop: false,
-            toast: true,
-            wickets: true,
-            boundaries: true,
-            extras: false
-        };
 
-        // --- AUDIO ASSETS ---
-        const stadiumAmbience = new Audio('https://assets.mixkit.co/sfx/preview/mixkit-large-stadium-crowd-cheering-461.mp3');
-        stadiumAmbience.loop = true;
-        stadiumAmbience.volume = 0.3; 
+        const getCollPath = (name) => `artifacts/${appId}/public/data/${name}`;
 
-        const sounds = {
-            wicket: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-arcade-retro-game-over-213.mp3'),
-            four: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-winning-chimes-2015.mp3'),
-            six: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-achievement-bell-600.mp3'),
-            wide: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-retro-game-notification-212.mp3'),
-            noball: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-alert-bells-echo-765.mp3'),
-            legbye: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-game-ball-tap-2073.mp3'),
-            notification: new Audio('https://assets.mixkit.co/sfx/preview/mixkit-bubble-pop-slide-2363.mp3')
-        };
-        
-        // --- IMPROVED BENGALI COMMENTARY DATABASE ---
-        const bengaliCommentary = {
-            intro: [
-                "সুস্বাগতম ক্রিকেট প্রেমিরা! আজকের এই রোমাঞ্চকর ম্যাচে আপনাদের সাথে আছি আমি। মাঠের পরিবেশ আজ সত্যিই চমৎকার!",
-                "আসসালামু আলাইকুম! শুরু হতে যাচ্ছে আরও একটি উত্তেজনাপূর্ণ লড়াই। স্টেডিয়ামে দর্শকদের উচ্ছ্বাস কানায় কানায় পূর্ণ।",
-                "আজকের আবহাওয়া ক্রিকেটের জন্য একদম আদর্শ। আশা করছি আমরা একটি দুর্দান্ত ম্যাচ উপভোগ করব।"
-            ],
-            dots: [
-                "বোলার খুব সুন্দর একটি ডেলিভারি দিলেন। ব্যাটসম্যান সতর্কতার সাথে বলটি ডিফেন্ড করলেন। কোনো রান হলো না।",
-                "অসাধারণ লাইন এবং লেংথ! ব্যাটসম্যান বুঝতেই পারলেন না, বল সোজা ফিল্ডারের হাতে। ডট বল।",
-                "ব্যাটসম্যান ঝুঁকি নিতে চাইলেন না, রক্ষণাত্মক ভঙ্গিতে খেললেন। স্কোরে কোনো পরিবর্তন নেই।"
-            ],
-            singles: [
-                "ব্যাটসম্যান আলতো করে বলটি গ্যাপে ঠেলে দিয়ে দ্রুত প্রান্ত বদল করলেন। স্কোরবোর্ডে আরও একটি রান যুক্ত হলো।",
-                "সুন্দর প্লেসমেন্ট! মিড-অন অঞ্চল দিয়ে খেলে একটি রান নিলেন। স্ট্রাইক রোটেট করে চাপ কমানোর চেষ্টা।",
-                "রিস্টের দারুণ ব্যবহারে বল লেগ সাইডে ঠেলে দিয়ে এক রান। খেলার গতি সচল রাখছেন ব্যাটসম্যানরা।"
-            ],
-            twos: [
-                "দ্রুত রানিং বিটুইন দ্য উইকেট! ফিল্ডার বল কুড়িয়ে ফেরত পাঠানোর আগেই ব্যাটসম্যানরা দুটি রান পূর্ণ করলেন।",
-                "গ্যাপে বল পাঠিয়েই দৌড় শুরু! অনায়াসেই দুটি রান নিলেন, ফিল্ডারের কিছু করার ছিল না।"
-            ],
-            threes: [
-                "বাউন্ডারি লাইনের খুব কাছে ফিল্ডিং হলো, কিন্তু ততক্ষণে ব্যাটসম্যানরা বিদ্যুৎগতিতে তিনটি রান নিয়ে নিলেন!",
-                "মাঠের বড় অংশ কাজে লাগিয়ে তিনটি রান! ফিল্ডারদের ওপর চাপ সৃষ্টি করলেন ব্যাটসম্যানরা।"
-            ],
-            fours: [
-                "অপূর্ব টাইমিং! ব্যাটসম্যানের ব্যাট থেকে যেন গুলি বেরোল, বল সোজা বাউন্ডারির বাইরে। চার রান!",
-                "কি চমৎকার শট! বোলারকে কোনো সুযোগই দিলেন না, বল মাটি কামড়ে সীমানার বাইরে। দর্শণীয় বাউন্ডারি!",
-                "ফিল্ডারের মাথার ওপর দিয়ে কভার ড্রাইভ! বল চোখের পলকে বাউন্ডারি পার। অসাধারণ চার!"
-            ],
-            sixes: [
-                "ওহ, কি বিশাল শট! ব্যাটসম্যান তার সমস্ত শক্তি দিয়ে বলটি গ্যালারিতে পাঠালেন। আম্পায়ারের দুই হাত উপরে, ছক্কা!",
-                "আকাশচুম্বী শট! বল হাওয়ায় ভাসতে ভাসতে স্টেডিয়ামের বাইরে গিয়ে পড়ল। দর্শকদের উল্লাস দেখার মতো!",
-                "ব্যাটে-বলে সংযোগ হতেই বোঝা গিয়েছিল এটি ছক্কা হবে। বোলার হতাশ, কিন্তু দর্শকরা দারুণ উপভোগ করলেন!"
-            ],
-            wickets: [
-                "কি দারুণ ডেলিভারি! ব্যাটসম্যান পরাস্ত, এবং উইকেট! খেলার মোড় সম্পূর্ণ ঘুরে গেল।",
-                "আকাশে বল... ফিল্ডার তার নিচে... এবং দারুণ একটি ক্যাচ! সাজঘরে ফিরতে হচ্ছে ব্যাটসম্যানকে। বোলার উচ্ছ্বসিত!",
-                "বোল্ড আউট! স্ট্যাম্প ছিটকে গেল! বোলারের গতি আর সুইংয়ের কাছে হার মানলেন ব্যাটসম্যান।",
-                "এলবিডব্লিউর জোরালো আবেদন... এবং আঙুল তুললেন আম্পায়ার! প্যাভিলিয়নের পথ ধরলেন ব্যাটসম্যান।"
-            ],
-            extras: {
-                WD: "ওয়াইড বল! বলটি লেগ স্ট্যাম্পের অনেক বাইরে দিয়ে গেল। অতিরিক্ত রান।",
-                NB: "ওহ, এটি নো বল! বোলার দাগ অতিক্রম করেছেন। ব্যাটিং দল ফ্রি হিট পাবে!",
-                LB: "লেগ বাই থেকে রান এলো। বল প্যাডে লেগে দিক পরিবর্তন করল।",
-                BY: "কিপার বল ধরতে ব্যর্থ হলেন, বাই রান যুক্ত হলো স্কোরবোর্ডে।"
-            },
-            milestones: [
-                "অসাধারণ! দলীয় ৫০ রান পূর্ণ হলো। এই জুটির বোঝাপড়া দলকে ভালো অবস্থানে নিয়ে যাচ্ছে।",
-                "দলীয় ১০০ রান স্পর্শ করল! ব্যাটসম্যানরা এখন সেট হয়ে গেছেন, বড় স্কোরের দিকে এগোচ্ছেন।"
-            ]
-        };
-
-        const getCollPath = (name) => `artifacts/${appId}/public/data/${name}`; 
-
+        // INIT
         async function initApp() {
-            const loader = document.getElementById('globalLoader');
-            loadNotifSettings(); // Load settings first
+            // Check Theme Preference
+            if (localStorage.theme === 'dark' || (!('theme' in localStorage) && window.matchMedia('(prefers-color-scheme: dark)').matches)) {
+                document.documentElement.classList.add('dark');
+            } else {
+                document.documentElement.classList.remove('dark');
+            }
+
             try {
                 await signInAnonymously(auth);
-                switchView('live');
-                loadVoices();
-                if (speechSynthesis.onvoiceschanged !== undefined) speechSynthesis.onvoiceschanged = loadVoices;
-                updateNotifIcon();
+                // Hide Loader
+                const loader = document.getElementById('globalLoader');
                 loader.style.opacity = '0';
                 setTimeout(() => loader.style.display = 'none', 500);
+                
+                switchView('live');
             } catch (error) {
-                console.error("Init Error:", error);
-                // Replaced alert logic with in-div message for webview safety
-                loader.innerHTML = `<p class="text-red-500 p-4 text-center">সংযোগ বিচ্ছিন্ন হয়েছে।<br>দয়া করে ইন্টারনেট সংযোগ পরীক্ষা করুন।</p>`;
+                console.error("Auth Error:", error);
+                document.getElementById('globalLoader').innerHTML = `<div class="text-red-500 text-center p-4">Connection Failed.<br><span class="text-xs text-gray-400">Please refresh</span></div>`;
             }
         }
         initApp();
 
-        // --- NOTIFICATION SETTINGS LOGIC ---
-        function loadNotifSettings() {
-            const saved = localStorage.getItem('cricscore_notif_settings');
-            if(saved) notifSettings = JSON.parse(saved);
-            
-            // Sync UI
-            document.getElementById('set-desktop').checked = notifSettings.desktop;
-            document.getElementById('set-toast').checked = notifSettings.toast;
-            document.getElementById('set-wickets').checked = notifSettings.wickets;
-            document.getElementById('set-boundaries').checked = notifSettings.boundaries;
-            document.getElementById('set-extras').checked = notifSettings.extras;
-        }
-
-        window.toggleNotifSetting = (key) => {
-            const el = document.getElementById(`set-${key}`);
-            notifSettings[key] = el.checked;
-            localStorage.setItem('cricscore_notif_settings', JSON.stringify(notifSettings));
-            
-            if(key === 'desktop' && el.checked) {
-                window.requestNativePermission();
-            }
-            updateNotifIcon();
+        // UI HELPERS
+        window.toggleTheme = () => {
+            document.documentElement.classList.toggle('dark');
+            localStorage.theme = document.documentElement.classList.contains('dark') ? 'dark' : 'light';
         };
 
-        window.openNotifSettings = () => {
-            document.getElementById('notifSettingsModal').classList.remove('opacity-0', 'pointer-events-none');
-            document.body.classList.add('modal-active');
+        window.switchView = (viewName) => {
+            // Hide all views
+            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
+            // Show target
+            document.getElementById(`${viewName}View`).classList.remove('hidden');
+            
+            // Update Bottom Nav
+            document.querySelectorAll('.nav-item').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.nav-item[data-target="${viewName}"]`);
+            if(activeBtn) activeBtn.classList.add('active');
+
+            // Scroll to top
+            window.scrollTo(0, 0);
+
+            // Load data
+            if(viewName === 'live') loadMatches();
+            if(viewName === 'players') loadAllPlayers();
         };
 
-        window.requestNativePermission = async () => {
-            if (!("Notification" in window)) {
-                showToast("দুঃখিত", "এই ব্রাউজার নোটিফিকেশন সমর্থন করে না।");
-                return;
-            }
-            const permission = await Notification.requestPermission();
-            const btn = document.getElementById('permBtn');
-            if(permission === 'granted') {
-                btn.innerText = "অনুমতি দেওয়া হয়েছে ✅";
-                btn.classList.add('text-green-600');
-                if(!notifSettings.desktop) {
-                    notifSettings.desktop = true;
-                    document.getElementById('set-desktop').checked = true;
-                    localStorage.setItem('cricscore_notif_settings', JSON.stringify(notifSettings));
+        window.switchMainTab = (tab) => {
+             document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+             document.getElementById(`content-${tab}`).classList.remove('hidden');
+             
+             // Update tab buttons styles
+             const tabs = ['scorecard', 'commentary', 'analytics'];
+             tabs.forEach(t => {
+                 const btn = document.getElementById(`tab-${t}`);
+                 if(t === tab) {
+                    btn.className = "flex-1 py-4 text-sm font-bold text-green-500 border-b-2 border-green-500 bg-green-50/50 dark:bg-green-900/10 transition-colors";
+                 } else {
+                    btn.className = "flex-1 py-4 text-sm font-bold text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors";
+                 }
+             });
+
+             if(tab === 'analytics' && currentMatchState) setTimeout(() => renderCharts(currentMatchState), 100);
+        };
+
+        // --- MATCHES LIST LOGIC ---
+        function loadMatches() {
+            if (matchesListUnsubscribe) matchesListUnsubscribe();
+            const list = document.getElementById('matchesList');
+            const q = query(collection(db, getCollPath('matches')), orderBy('createdAt', 'desc'));
+
+            matchesListUnsubscribe = onSnapshot(q, (snapshot) => {
+                list.innerHTML = '';
+                if(snapshot.empty) {
+                    list.innerHTML = `
+                        <div class="text-center py-12">
+                            <div class="bg-gray-100 dark:bg-gray-800 w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-4">
+                                <i class="fas fa-baseball-bat-ball text-3xl text-gray-400"></i>
+                            </div>
+                            <h3 class="text-gray-500 font-medium">No matches live right now</h3>
+                        </div>`;
+                    return;
                 }
-            } else {
-                btn.innerText = "অনুমতি বাতিল করা হয়েছে ❌";
-                btn.classList.add('text-red-600');
-                notifSettings.desktop = false;
-                document.getElementById('set-desktop').checked = false;
-            }
-            updateNotifIcon();
-        };
 
-        function updateNotifIcon() {
-            const btn = document.getElementById('notifBtn');
-            const icon = btn.querySelector('i');
-            
-            if(notifSettings.desktop || notifSettings.toast) {
-                icon.className = "fas fa-bell text-yellow-500";
-            } else {
-                icon.className = "fas fa-bell-slash text-gray-400";
-            }
+                snapshot.forEach(doc => {
+                    const m = {id: doc.id, ...doc.data()};
+                    list.innerHTML += renderMatchCard(m);
+                });
+            });
         }
 
-        // --- TOAST SYSTEM ---
-        function showToast(title, body, type = 'info') {
-            if(!notifSettings.toast) return;
+        function renderMatchCard(match) {
+            const isLive = match.status === 'live';
+            const statusColor = isLive ? 'text-red-500' : 'text-gray-400';
+            const statusText = isLive ? 'LIVE' : (match.result || 'Finished');
+            const borderClass = isLive ? 'border-l-4 border-l-red-500' : '';
 
-            const container = document.getElementById('toast-container');
-            const toast = document.createElement('div');
-            
-            let bgClass = "bg-white dark:bg-gray-800 text-gray-800 dark:text-white";
-            let borderClass = "border-l-4 border-blue-500";
-            let icon = "fa-info-circle text-blue-500";
-            
-            if(type === 'wicket') { borderClass = "border-l-4 border-red-500"; icon = "fa-skull text-red-500"; }
-            else if(type === 'four') { borderClass = "border-l-4 border-blue-600"; icon = "fa-star text-blue-600"; }
-            else if(type === 'six') { borderClass = "border-l-4 border-green-600"; icon = "fa-rocket text-green-600"; }
-            
-            toast.className = `toast-item p-4 rounded-lg flex flex-col relative overflow-hidden animate-slide-in-right ${bgClass} ${borderClass}`;
-            
-            toast.innerHTML = `
-                <div class="flex items-start">
-                    <i class="fas ${icon} text-xl mt-1 mr-3"></i>
-                    <div>
-                        <h4 class="font-bold text-sm uppercase tracking-wide font-sans">${title}</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-snug font-sans">${body}</p>
+            return `
+                <div class="glass-card rounded-xl p-5 mb-4 relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 ${borderClass}" onclick="openMatch('${match.id}')">
+                    <div class="flex justify-between items-start mb-3">
+                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-display">${match.tournamentName || 'Friendly Match'}</span>
+                        <span class="text-[10px] font-bold ${statusColor} bg-gray-100 dark:bg-gray-700/50 px-2 py-0.5 rounded-full flex items-center gap-1">
+                            ${isLive ? '<span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>' : ''} ${statusText}
+                        </span>
                     </div>
+                    
+                    <div class="flex items-center justify-between">
+                        <div class="flex-1">
+                            <h3 class="font-bold text-gray-800 dark:text-gray-100 text-lg leading-tight font-display">${match.teamAName}</h3>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">${match.score?.teamA || '0/0'}</p>
+                        </div>
+                        <div class="mx-4 text-xs font-bold text-gray-300">VS</div>
+                        <div class="flex-1 text-right">
+                            <h3 class="font-bold text-gray-800 dark:text-gray-100 text-lg leading-tight font-display">${match.teamBName}</h3>
+                            <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">${match.score?.teamB || '0/0'}</p>
+                        </div>
+                    </div>
+
+                    ${isLive ? `<div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50 text-center text-xs text-green-600 dark:text-green-400 font-medium flex items-center justify-center gap-1">
+                        <i class="fas fa-circle text-[6px]"></i> Tap to watch live
+                    </div>` : ''}
                 </div>
-                <div class="toast-progress absolute bottom-0 left-0"></div>
             `;
+        }
+
+        // --- MATCH DETAIL LOGIC ---
+        window.openMatch = (matchId) => {
+            currentMatchId = matchId; 
+            lastProcessedBallId = 0;
+            switchView('matchDetail');
             
-            // Play notification sound for toast if it's a general alert or audio is muted
-            if(!isAudioEnabled) {
-                sounds.notification.currentTime = 0;
-                sounds.notification.volume = 0.5;
-                sounds.notification.play().catch(()=>{});
-            }
-
-            container.appendChild(toast);
+            // Reset UI
+            document.getElementById('teamAScore').innerText = '0/0';
+            document.getElementById('teamBScore').innerText = '0/0';
             
-            setTimeout(() => {
-                toast.classList.remove('animate-slide-in-right');
-                toast.classList.add('animate-fade-out');
-                setTimeout(() => toast.remove(), 500);
-            }, 4000);
-        }
-
-        // --- HYBRID AUDIO ENGINE (NATIVE + GOOGLE TTS FALLBACK) ---
-        function loadVoices() {
-            const voices = synth.getVoices();
-            // Prioritize Bengali voices
-            preferredVoice = voices.find(v => v.lang === 'bn-BD') || 
-                             voices.find(v => v.lang === 'bn-IN') ||
-                             voices.find(v => v.lang.includes('bn'));
-        }
-        
-        function playSound(type) {
-            if(!isAudioEnabled) return;
-            if(sounds[type]) {
-                sounds[type].currentTime = 0;
-                sounds[type].play().catch(e => console.log("Audio play failed", e));
-            }
-        }
-
-        // Helper to lower background volume (Ducking)
-        function duckAudio() {
-            if(isAudioEnabled) {
-                stadiumAmbience.volume = 0.1;
-            }
-        }
-
-        // Helper to restore background volume
-        function restoreAudio() {
-            if(isAudioEnabled) {
-                stadiumAmbience.volume = 0.3;
-            }
-        }
-
-        window.toggleAudio = () => {
-            isAudioEnabled = !isAudioEnabled;
-            const btn = document.getElementById('audioToggleBtn');
-            const icon = document.getElementById('audioIcon');
-            const text = document.getElementById('audioText');
-            const wave = document.getElementById('audioVisualizer');
-
-            if(!preferredVoice) loadVoices();
-
-            if(isAudioEnabled) {
-                // UI Update
-                icon.className = "fas fa-volume-up text-green-600 text-lg";
-                text.innerText = "ধারাভাষ্য চলছে"; 
-                btn.classList.add('border-green-500', 'ring-2', 'ring-green-100');
-                
-                // Start Background Noise
-                stadiumAmbience.play().catch(e => console.log("Bg audio failed", e));
-                
-                // Initial Greeting
-                speakCommentary(bengaliCommentary.intro[Math.floor(Math.random() * bengaliCommentary.intro.length)]);
-                
-            } else {
-                // Stop Everything
-                icon.className = "fas fa-volume-mute text-lg";
-                text.innerText = "ধারাভাষ্য বন্ধ";
-                btn.classList.remove('border-green-500', 'ring-2', 'ring-green-100');
-                wave.classList.add('hidden');
-                
-                synth.cancel();
-                if(currentAudio) {
-                    currentAudio.pause();
-                    currentAudio = null;
+            if(currentMatchUnsubscribe) currentMatchUnsubscribe();
+            
+            currentMatchUnsubscribe = onSnapshot(doc(db, getCollPath('matches'), matchId), (docSnap) => {
+                if (docSnap.exists()) {
+                    const data = docSnap.data();
+                    currentMatchState = calculateMatchState(data);
+                    updateUI(data, currentMatchState);
                 }
-                stadiumAmbience.pause();
-            }
+            });
         };
-
-        function speakCommentary(text, volume = 1.0, pitch = 1.0) {
-            if(!isAudioEnabled || !text) return;
-
-            // 1. Cancel any ongoing native/fallback audio
-            synth.cancel();
-            if(currentAudio) {
-                currentAudio.pause();
-                currentAudio = null;
-            }
-
-            // Forced Bengali Language Code
-            let langCode = 'bn'; 
-
-            // 2. Try Native TTS First
-            const voices = synth.getVoices();
-            const canUseNative = ('speechSynthesis' in window) && (voices.length > 0);
-
-            if (canUseNative) {
-                const utterance = new SpeechSynthesisUtterance(text);
-                // Explicitly force Bengali lang
-                utterance.lang = 'bn-BD'; 
-                if (preferredVoice) utterance.voice = preferredVoice;
-                
-                utterance.volume = volume;
-                utterance.pitch = pitch;
-                utterance.rate = 1.0;
-
-                let nativeStarted = false;
-
-                utterance.onstart = () => { 
-                    nativeStarted = true;
-                    duckAudio(); // Volume down
-                    document.getElementById('audioVisualizer').classList.remove('hidden');
-                    lastSpeechTime = Date.now();
-                };
-                
-                utterance.onend = () => { 
-                    restoreAudio(); // Volume up
-                    document.getElementById('audioVisualizer').classList.add('hidden');
-                };
-
-                utterance.onerror = (e) => {
-                    console.warn("Native TTS Error, switching to Fallback", e);
-                    playGoogleTTS(text, langCode); // Failover to Google TTS
-                };
-                
-                try {
-                    synth.speak(utterance);
-                    
-                    // 3. Fallback Timeout Logic
-                    setTimeout(() => {
-                        if(!nativeStarted && synth.speaking) {
-                            console.warn("Native TTS timeout (WebView issue?), switching to Google TTS");
-                            synth.cancel();
-                            playGoogleTTS(text, langCode);
-                        }
-                    }, 800);
-                } catch(e) {
-                    playGoogleTTS(text, langCode);
-                }
-
-            } else {
-                // Direct Fallback if native not supported
-                playGoogleTTS(text, langCode);
-            }
-        }
-
-        function playGoogleTTS(text, lang) {
-             duckAudio(); // Volume down
-             document.getElementById('audioVisualizer').classList.remove('hidden');
-
-             const encodedText = encodeURIComponent(text);
-             // Google Translate TTS API (Client logic for fallback)
-             const url = `https://translate.google.com/translate_tts?ie=UTF-8&q=${encodedText}&tl=${lang}&client=tw-ob`;
-
-             currentAudio = new Audio(url);
-             currentAudio.volume = 1.0;
-
-             currentAudio.onended = () => {
-                 restoreAudio(); // Volume up
-                 document.getElementById('audioVisualizer').classList.add('hidden');
-                 currentAudio = null;
-             };
-
-             currentAudio.onerror = (e) => {
-                 console.error("Fallback TTS failed", e);
-                 restoreAudio();
-                 document.getElementById('audioVisualizer').classList.add('hidden');
-             };
-
-             currentAudio.play().catch(e => console.error("TTS Play Error", e));
-        }
-
-        function triggerVisualEffect(ball) {
-            const overlay = document.getElementById('eventOverlay');
-            const bigText = document.getElementById('eventBigText');
-            const subText = document.getElementById('eventSubText');
-            let showOverlay = false;
-            let notifTitle = "";
-            let notifBody = "";
-            let notifType = "info";
-
-            overlay.className = ''; 
-
-            if (ball.isWicket) {
-                if(notifSettings.wickets) {
-                    notifTitle = "উইকেট!";
-                    notifBody = `${ball.strikerName} (${ball.wicketType})`;
-                    notifType = "wicket";
-                    
-                    showOverlay = true; 
-                    bigText.innerText = "আউট!"; subText.innerText = notifBody;
-                    overlay.classList.add('type-wicket'); playSound('wicket');
-                }
-            } 
-            else if (ball.runs === 4) {
-                if(notifSettings.boundaries) {
-                    notifTitle = "চার!";
-                    notifBody = `${ball.strikerName} বাউন্ডারি হাঁকিয়েছেন!`;
-                    notifType = "four";
-
-                    showOverlay = true; 
-                    bigText.innerText = "৪"; subText.innerText = "দারুণ শট!";
-                    overlay.classList.add('type-4', 'stadium-bg'); playSound('four');
-                }
-            } 
-            else if (ball.runs === 6) {
-                if(notifSettings.boundaries) {
-                    notifTitle = "ছক্কা!";
-                    notifBody = `${ball.strikerName} বিশাল ছক্কা মেরেছেন!`;
-                    notifType = "six";
-
-                    showOverlay = true; 
-                    bigText.innerText = "৬"; subText.innerText = "বিশাল ছক্কা!";
-                    overlay.classList.add('type-6', 'stadium-bg'); playSound('six');
-                }
-            }
-            else if (ball.extrasType && notifSettings.extras) {
-                if (ball.extrasType === 'WD') {
-                    showOverlay = true; bigText.innerText = "WD"; subText.innerText = "ওয়াইড বল";
-                    overlay.classList.add('type-extra'); playSound('wide');
-                    notifTitle = "এক্সট্রা"; notifBody = "ওয়াইড বল";
-                }
-                else if (ball.extrasType === 'NB') {
-                    showOverlay = true; bigText.innerText = "NB"; subText.innerText = "নো বল";
-                    overlay.classList.add('type-extra'); playSound('noball');
-                    notifTitle = "এক্সট্রা"; notifBody = "নো বল";
-                }
-            }
-
-            // Execute Visuals
-            if (showOverlay) {
-                overlay.classList.add('active');
-                if(window.navigator.vibrate) window.navigator.vibrate([100, 50, 100]);
-                setTimeout(() => { overlay.classList.remove('active', 'stadium-bg'); }, 4000);
-            }
-            
-            // Execute Notifications
-            if(notifTitle) {
-                showToast(notifTitle, notifBody, notifType);
-                if(notifSettings.desktop && Notification.permission === 'granted' && document.hidden) {
-                    new Notification(`CricScore: ${notifTitle}`, { body: notifBody, icon: "https://cdn-icons-png.flaticon.com/512/2501/2501237.png", vibrate: [200, 100, 200] });
-                }
-            }
-        }
-
-        function processNewBallForAudio(ball, matchData, state) {
-            if (ball.id <= lastProcessedBallId) return;
-            lastProcessedBallId = ball.id;
-            triggerVisualEffect(ball);
-            if (!isAudioEnabled) return;
-
-            let commentary = "";
-            const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
-
-            // সুন্দর ব্যাখ্যামূলক ধারাভাষ্য নির্বাচন
-            if (ball.isWicket) {
-                commentary = getRandom(bengaliCommentary.wickets);
-            } 
-            else if (ball.runs === 4) {
-                commentary = getRandom(bengaliCommentary.fours);
-            } 
-            else if (ball.runs === 6) {
-                commentary = getRandom(bengaliCommentary.sixes);
-            } 
-            else if (ball.runs === 0) {
-                commentary = getRandom(bengaliCommentary.dots);
-            } 
-            else if (ball.runs === 1) {
-                commentary = getRandom(bengaliCommentary.singles);
-            }
-            else if (ball.runs === 2) {
-                commentary = getRandom(bengaliCommentary.twos);
-            }
-            else if (ball.runs === 3) {
-                commentary = getRandom(bengaliCommentary.threes);
-            }
-            else {
-                commentary = `ব্যাটে বলে ভালো সংযোগ হয়নি, তবে তারা ${ball.runs} টি রান নিতে সক্ষম হলেন।`;
-            }
-
-            // এক্সট্রা রানের সুন্দর ব্যাখ্যা
-            if (ball.extrasType) {
-                const extraText = bengaliCommentary.extras[ball.extrasType] || "অতিরিক্ত খাত থেকে রান এল।";
-                commentary = `${extraText} ${commentary}`;
-            }
-
-            // ওভার শেষের ঘোষণা
-            if(state.innings[state.currentInnings].balls % 6 === 0) {
-                const score = state.innings[state.currentInnings];
-                commentary += ` আরও একটি ওভারের সমাপ্তি। বর্তমানে দলের সংগ্রহ ${score.runs} রান, ${score.wickets} উইকেটের বিনিময়ে।`;
-            }
-
-            speakCommentary(commentary);
-        }
 
         function calculateMatchState(matchData) {
+            // Reconstruct local state from history
             const state = {
-                innings: { 1: { runs: 0, wickets: 0, overs: 0, balls: 0, extras: 0, history: [] }, 2: { runs: 0, wickets: 0, overs: 0, balls: 0, extras: 0, history: [] } },
+                innings: { 1: { runs: 0, wickets: 0, overs: 0, balls: 0, history: [] }, 2: { runs: 0, wickets: 0, overs: 0, balls: 0, history: [] } },
                 currentInnings: matchData.currentInnings || 1,
                 batsmen: {}, bowlers: {}, 
-                strikerId: matchData.currentStrikerId, nonStrikerId: matchData.currentNonStrikerId, currentBowlerId: matchData.currentBowlerId,
-                timeline: [], dismissedPlayers: [],
-                partnership: { runs: 0, balls: 0, p1Id: matchData.currentStrikerId, p1Runs: 0, p2Id: matchData.currentNonStrikerId, p2Runs: 0, extras: 0 }
+                timeline: []
             };
 
             const history = matchData.history || [];
-            let lastWicketBallIndex = -1; 
-            history.forEach((b, index) => { if(b.isWicket) lastWicketBallIndex = index; });
-
+            
             history.forEach((ball, index) => {
                 const inn = ball.innings;
                 const s = state.innings[inn];
                 if (!s) return;
-                
+
+                // Init Stats if needed
                 if(!state.batsmen[ball.strikerId]) state.batsmen[ball.strikerId] = { runs:0, balls:0, fours:0, sixes:0, out: null, name: ball.strikerName };
                 if(!state.batsmen[ball.nonStrikerId]) state.batsmen[ball.nonStrikerId] = { runs:0, balls:0, fours:0, sixes:0, out: null, name: ball.nonStrikerName };
                 if(!state.bowlers[ball.bowlerId]) state.bowlers[ball.bowlerId] = { balls:0, runs:0, wickets:0, maidens:0, name: ball.bowlerName };
@@ -1122,462 +591,413 @@
                 const striker = state.batsmen[ball.strikerId];
                 const bowler = state.bowlers[ball.bowlerId];
                 
-                let totalRunsForBall = ball.runs;
+                let totalRuns = ball.runs;
                 let batRuns = ball.runs;
-                let isLegalDelivery = true;
+                let isLegal = true;
 
+                // Handle Extras
                 if (ball.extrasType) {
-                    s.extras += (ball.extrasRuns || 1) + ball.runs; 
-                    totalRunsForBall += (ball.extrasRuns || 0); 
-                    if (ball.extrasType === 'WD' || ball.extrasType === 'NB') { isLegalDelivery = false; if(ball.extrasType === 'NB') batRuns = ball.runs; else batRuns = 0; } else { batRuns = 0; }
-                    if(bowler) { bowler.runs += totalRunsForBall; if (ball.extrasType === 'BY' || ball.extrasType === 'LB') bowler.runs -= totalRunsForBall; }
-                } else { if(bowler) bowler.runs += ball.runs; }
-
-                if(striker) striker.runs += batRuns;
-                if (isLegalDelivery) { if(striker) striker.balls++; if(bowler) bowler.balls++; }
-                if (batRuns === 4 && striker) striker.fours++;
-                if (batRuns === 6 && striker) striker.sixes++;
-
-                if (ball.isWicket) {
-                    s.wickets++; if (ball.wicketType !== 'runout' && bowler) bowler.wickets++;
-                    const victimId = ball.wicketVictimId || ball.strikerId;
-                    state.dismissedPlayers.push(victimId);
-                    if(state.batsmen[victimId]) state.batsmen[victimId].out = ball.wicketType;
+                    totalRuns += (ball.extrasRuns || 0);
+                    if(ball.extrasType === 'WD' || ball.extrasType === 'NB') { 
+                        isLegal = false; 
+                        batRuns = (ball.extrasType === 'NB') ? ball.runs : 0;
+                    } else { batRuns = 0; } // LB/BY counts to team not bat
                 }
 
-                s.runs += totalRunsForBall;
-                if (isLegalDelivery) { s.balls++; if (s.balls % 6 === 0) { s.overs++; s.balls = 0; } }
-                
-                // History for Worm Graph
-                if (isLegalDelivery && (s.balls === 0 || index === history.length - 1)) {
-                    const overNum = s.overs + (s.balls/6);
-                    s.history.push({ over: overNum, runs: s.runs, wickets: s.wickets });
+                // Update Stats
+                s.runs += totalRuns;
+                if(striker) {
+                    striker.runs += batRuns;
+                    if(isLegal) striker.balls++;
+                    if(batRuns === 4) striker.fours++;
+                    if(batRuns === 6) striker.sixes++;
+                }
+                if(bowler) {
+                    bowler.runs += totalRuns;
+                    if(ball.extrasType === 'LB' || ball.extrasType === 'BY') bowler.runs -= totalRuns; // Don't count LB/BY against bowler
+                    if(isLegal) bowler.balls++;
+                    if(ball.isWicket && ball.wicketType !== 'runout') bowler.wickets++;
                 }
 
-                // Partnership Logic
-                if (inn === state.currentInnings && index > lastWicketBallIndex) {
-                    state.partnership.runs += totalRunsForBall;
-                    if(isLegalDelivery) state.partnership.balls++;
-                    if(ball.strikerId === state.partnership.p1Id) state.partnership.p1Runs += batRuns;
-                    else if(ball.strikerId === state.partnership.p2Id) state.partnership.p2Runs += batRuns;
-                    if(totalRunsForBall > batRuns) state.partnership.extras += (totalRunsForBall - batRuns);
+                if(isLegal) {
+                    s.balls++;
+                    if(s.balls === 6) { s.overs++; s.balls = 0; }
                 }
 
-                ball.cumulativeOvers = `${s.overs}.${s.balls}`; 
-                state.timeline.unshift(ball); 
+                if(ball.isWicket) {
+                    s.wickets++;
+                    if(state.batsmen[ball.wicketVictimId || ball.strikerId]) {
+                        state.batsmen[ball.wicketVictimId || ball.strikerId].out = ball.wicketType;
+                    }
+                }
+
+                // Push for timeline
+                ball.overStr = `${s.overs}.${s.balls}`;
+                state.timeline.unshift(ball);
+
+                // Worm Data
+                if(isLegal && (s.balls === 0 || index === history.length -1)) {
+                    s.history.push({ over: s.overs + (s.balls/6), runs: s.runs });
+                }
             });
 
-            state.innings[1].displayOvers = `${state.innings[1].overs}.${state.innings[1].balls}`;
-            state.innings[2].displayOvers = `${state.innings[2].overs}.${state.innings[2].balls}`;
+            // Check for new event trigger
+            if(history.length > 0) {
+                const lastBall = history[history.length - 1];
+                if(lastBall.id > lastProcessedBallId) {
+                    lastProcessedBallId = lastBall.id;
+                    triggerEventEffects(lastBall);
+                }
+            }
 
-            if (history.length > 0 && currentMatchData) { processNewBallForAudio(history[history.length - 1], matchData, state); }
             return state;
         }
 
-        // --- CHART RENDERING ---
-        function renderCharts(match, state) {
-            const ctxWorm = document.getElementById('wormChart').getContext('2d');
-            const ctxPartner = document.getElementById('partnershipChart').getContext('2d');
+        // --- EFFECTS SYSTEM ---
+        function triggerEventEffects(ball) {
+            // 1. Confetti & Overlay
+            if(ball.runs === 6 || ball.runs === 4 || ball.isWicket) {
+                const overlay = document.getElementById('eventOverlay');
+                const mainTxt = document.getElementById('eventText');
+                const subTxt = document.getElementById('eventSub');
+                
+                overlay.classList.remove('opacity-0', 'pointer-events-none');
+                overlay.classList.add('active'); // Triggers scale effect
+                
+                if(ball.runs === 6) {
+                    mainTxt.innerText = "6"; mainTxt.style.background = "linear-gradient(to bottom, #4ade80, #16a34a)"; mainTxt.style.webkitBackgroundClip = "text";
+                    subTxt.innerText = "HUGE SIX!";
+                    confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 }, colors: ['#4ade80', '#22c55e'] });
+                } else if (ball.runs === 4) {
+                    mainTxt.innerText = "4"; mainTxt.style.background = "linear-gradient(to bottom, #60a5fa, #2563eb)"; mainTxt.style.webkitBackgroundClip = "text";
+                    subTxt.innerText = "BOUNDARY!";
+                    confetti({ particleCount: 100, spread: 60, origin: { y: 0.6 }, colors: ['#60a5fa', '#2563eb'] });
+                } else if (ball.isWicket) {
+                    mainTxt.innerText = "OUT"; mainTxt.style.background = "linear-gradient(to bottom, #f87171, #dc2626)"; mainTxt.style.webkitBackgroundClip = "text";
+                    subTxt.innerText = ball.wicketType.toUpperCase();
+                }
 
-            // 1. Worm Chart
-            const inn1 = state.innings[1].history || [];
-            const inn2 = state.innings[2].history || [];
-            const maxLen = Math.max(inn1.length, inn2.length);
-            const labels = Array.from({length: maxLen}, (_, i) => i);
+                setTimeout(() => {
+                    overlay.classList.add('opacity-0', 'pointer-events-none');
+                    overlay.classList.remove('active');
+                }, 3500);
+            }
+
+            // 2. Toast Notification
+            showToast(ball);
+        }
+
+        function showToast(ball) {
+            const container = document.getElementById('toastContainer');
+            const el = document.createElement('div');
+            el.className = `glass-card p-3 rounded-lg border-l-4 flex items-center justify-between shadow-lg toast-enter mb-2`;
             
+            let text = `${ball.runs} runs`;
+            let borderColor = "border-gray-400";
+            
+            if(ball.isWicket) { text = `Wicket! ${ball.strikerName} out.`; borderColor = "border-red-500"; }
+            else if(ball.runs === 4) { text = `Four! ${ball.strikerName}`; borderColor = "border-blue-500"; }
+            else if(ball.runs === 6) { text = `Six! ${ball.strikerName}`; borderColor = "border-green-500"; }
+            else if(ball.extrasType) { text = `Extra: ${ball.extrasType}`; borderColor = "border-yellow-500"; }
+
+            el.classList.add(borderColor);
+            el.innerHTML = `<span class="font-bold text-sm dark:text-white">${text}</span> <span class="text-xs text-gray-500">${ball.overStr}</span>`;
+            
+            container.appendChild(el);
+            setTimeout(() => {
+                el.classList.remove('toast-enter');
+                el.classList.add('toast-exit');
+                setTimeout(() => el.remove(), 300);
+            }, 3000);
+        }
+
+        // --- UI UPDATE ---
+        function updateUI(match, state) {
+            // Header Stats
+            const i1 = state.innings[1]; const i2 = state.innings[2];
+            document.getElementById('teamAName').innerText = match.teamAName;
+            document.getElementById('teamBName').innerText = match.teamBName;
+            document.getElementById('matchTournamentName').innerText = match.tournamentName || 'Match Center';
+            document.getElementById('matchResult').innerText = match.result || (match.status === 'live' ? 'Match In Progress' : 'Result Pending');
+
+            document.getElementById('teamAScore').innerText = `${i1.runs}/${i1.wickets}`;
+            document.getElementById('teamAOvers').innerText = `${i1.overs}.${i1.balls} ov`;
+
+            if(match.currentInnings === 2 || match.status === 'completed') {
+                document.getElementById('teamBScore').innerText = `${i2.runs}/${i2.wickets}`;
+                document.getElementById('teamBOvers').innerText = `${i2.overs}.${i2.balls} ov`;
+                
+                // Target Logic
+                const target = i1.runs + 1;
+                const targetEl = document.getElementById('matchTargetDisplay');
+                targetEl.classList.remove('hidden');
+                targetEl.innerText = `Target: ${target}`;
+                
+                // Win Bar
+                if(match.status === 'live') {
+                    const el = document.getElementById('winProbContainer');
+                    el.classList.remove('hidden');
+                    // Simple logic for visual only
+                    const need = target - i2.runs;
+                    const remBalls = (match.oversLimit*6) - ((i2.overs*6)+i2.balls);
+                    const rrr = remBalls > 0 ? need/(remBalls/6) : 99;
+                    let probA = 50;
+                    if(rrr > 10) probA = 80; else if(rrr > 8) probA = 60; else if(rrr < 6) probA = 30;
+                    document.getElementById('winBarA').style.width = `${probA}%`;
+                    document.getElementById('winBarB').style.width = `${100-probA}%`;
+                }
+            } else {
+                 document.getElementById('teamBScore').innerText = "Yet to Bat";
+                 document.getElementById('teamBOvers').innerText = "";
+                 document.getElementById('winProbContainer').classList.add('hidden');
+            }
+
+            // Recent Balls
+            const ballCont = document.getElementById('recentBallsContainer');
+            ballCont.innerHTML = '';
+            state.timeline.slice(0, 15).forEach(b => {
+                let bg = "bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300";
+                let txt = b.runs;
+                if(b.isWicket) { bg = "bg-red-500 text-white shadow-red-500/50"; txt = "W"; }
+                else if(b.runs === 4) { bg = "bg-blue-500 text-white shadow-blue-500/50"; }
+                else if(b.runs === 6) { bg = "bg-green-500 text-white shadow-green-500/50"; }
+                else if(b.extrasType) { bg = "bg-yellow-100 dark:bg-yellow-900/50 text-yellow-600"; txt = b.extrasType; }
+                
+                ballCont.innerHTML += `<div class="ball-circle ${bg} flex-shrink-0 snap-start">${txt}</div>`;
+            });
+
+            // Scorecard Tables
+            renderScorecardTable(match.squadA, state, 'live-content-teamA', match);
+            renderScorecardTable(match.squadB, state, 'live-content-teamB', match);
+            
+            // Commentary Feed
+            const commFeed = document.getElementById('commFeed');
+            commFeed.innerHTML = '';
+            state.timeline.slice(0, 20).forEach(b => {
+                let border = "border-l-2 border-gray-300 dark:border-gray-600";
+                let title = `${b.runs} Runs`;
+                if(b.isWicket) { border = "border-l-4 border-red-500"; title = "WICKET"; }
+                else if(b.runs === 4 || b.runs === 6) { border = "border-l-4 border-green-500"; title = "BOUNDARY"; }
+
+                commFeed.innerHTML += `
+                    <div class="pl-4 relative ${border} py-1">
+                        <div class="flex justify-between items-center text-xs text-gray-400 mb-1">
+                            <span>Over ${b.overStr}</span>
+                            <span class="font-bold text-gray-600 dark:text-gray-300">${b.bowlerName} to ${b.strikerName}</span>
+                        </div>
+                        <p class="text-sm font-medium text-gray-800 dark:text-gray-200">
+                             ${b.isWicket ? `<span class="text-red-500 font-bold">OUT!</span> ${b.wicketType}` : `${title}`}
+                        </p>
+                    </div>
+                `;
+            });
+            
+            // Charts
+            if(document.getElementById('content-analytics').classList.contains('hidden') === false) {
+                 renderCharts(state);
+            }
+        }
+
+        function renderScorecardTable(squad, state, elId, match) {
+            if(!squad) return;
+            const container = document.getElementById(elId);
+            let html = `<table class="w-full text-sm border-collapse">
+                <thead><tr class="text-gray-400 text-xs border-b border-gray-200 dark:border-gray-700"><th class="text-left py-2 font-medium">Batter</th><th class="text-right py-2 font-medium">R</th><th class="text-right py-2 font-medium">B</th><th class="text-right py-2 font-medium">4s</th><th class="text-right py-2 font-medium">6s</th><th class="text-right py-2 font-medium">SR</th></tr></thead>
+                <tbody>`;
+            
+            squad.forEach(p => {
+                const s = state.batsmen[p.id];
+                if(s || p.id === match.currentStrikerId || p.id === match.currentNonStrikerId) {
+                    const isStriker = p.id === match.currentStrikerId;
+                    const isNonStriker = p.id === match.currentNonStrikerId;
+                    const runs = s ? s.runs : 0;
+                    const balls = s ? s.balls : 0;
+                    const sr = balls > 0 ? ((runs/balls)*100).toFixed(0) : 0;
+                    
+                    let rowClass = "border-b border-gray-100 dark:border-gray-700/50";
+                    let nameColor = "text-gray-800 dark:text-gray-200";
+                    let icon = "";
+                    
+                    if(s && s.out) { nameColor = "text-red-400 line-through decoration-red-500/50 opacity-70"; }
+                    else if (isStriker) { rowClass += " bg-green-50 dark:bg-green-900/10"; nameColor = "text-green-600 dark:text-green-400 font-bold"; icon="🏏"; }
+                    else if (isNonStriker) { rowClass += " bg-green-50/50 dark:bg-green-900/5"; nameColor = "text-green-600 dark:text-green-400"; }
+
+                    html += `<tr class="${rowClass}">
+                        <td class="py-3 ${nameColor}">${p.name} ${icon} <div class="text-[10px] text-gray-400 font-normal">${s && s.out ? s.out : ''}</div></td>
+                        <td class="text-right font-bold dark:text-gray-100">${runs}</td>
+                        <td class="text-right text-gray-500">${balls}</td>
+                        <td class="text-right text-gray-400">${s?.fours||0}</td>
+                        <td class="text-right text-gray-400">${s?.sixes||0}</td>
+                        <td class="text-right text-xs text-gray-500">${sr}</td>
+                    </tr>`;
+                }
+            });
+            html += `</tbody></table>`;
+            
+            // Bowling Section
+            html += `<h5 class="mt-4 mb-2 text-xs font-bold text-gray-400 uppercase">Bowling</h5>
+            <table class="w-full text-sm border-collapse">
+                <thead><tr class="text-gray-400 text-xs border-b border-gray-200 dark:border-gray-700"><th class="text-left py-2 font-medium">Bowler</th><th class="text-right py-2 font-medium">O</th><th class="text-right py-2 font-medium">M</th><th class="text-right py-2 font-medium">R</th><th class="text-right py-2 font-medium">W</th><th class="text-right py-2 font-medium">Eco</th></tr></thead>
+                <tbody>`;
+            
+            squad.forEach(p => {
+                const s = state.bowlers[p.id];
+                if(s) {
+                    const overs = Math.floor(s.balls/6) + '.' + (s.balls%6);
+                    const eco = s.balls > 0 ? ((s.runs/s.balls)*6).toFixed(1) : 0;
+                    const isCurrent = p.id === match.currentBowlerId;
+                    
+                    html += `<tr class="border-b border-gray-100 dark:border-gray-700/50 ${isCurrent ? 'bg-blue-50 dark:bg-blue-900/10' : ''}">
+                        <td class="py-2.5 ${isCurrent ? 'text-blue-600 dark:text-blue-400 font-bold' : 'text-gray-800 dark:text-gray-200'}">${p.name} ${isCurrent?'⚾':''}</td>
+                        <td class="text-right dark:text-gray-300">${overs}</td>
+                        <td class="text-right text-gray-400">${s.maidens}</td>
+                        <td class="text-right dark:text-gray-300">${s.runs}</td>
+                        <td class="text-right font-bold text-gray-800 dark:text-white">${s.wickets}</td>
+                        <td class="text-right text-xs text-gray-500">${eco}</td>
+                    </tr>`;
+                }
+            });
+
+            html += `</tbody></table>`;
+            container.innerHTML = html;
+        }
+
+        // --- CHARTS ---
+        function renderCharts(state) {
+            const ctx = document.getElementById('wormChart');
+            if(!ctx) return;
+            
+            const d1 = state.innings[1].history.map(h => h.runs);
+            const d2 = state.innings[2].history.map(h => h.runs);
+            const labels = Array.from({length: Math.max(d1.length, d2.length)}, (_, i) => i);
+
             if(wormChartInstance) wormChartInstance.destroy();
-            wormChartInstance = new Chart(ctxWorm, {
+            wormChartInstance = new Chart(ctx, {
                 type: 'line',
                 data: {
                     labels: labels,
                     datasets: [
-                        { label: match.teamAName, data: inn1.map(p=>p.runs), borderColor: '#3b82f6', tension: 0.4, pointRadius: 1 },
-                        { label: match.teamBName, data: inn2.map(p=>p.runs), borderColor: '#f59e0b', tension: 0.4, pointRadius: 1 }
+                        { label: 'Innings 1', data: d1, borderColor: '#10b981', tension: 0.4, pointRadius: 0, borderWidth: 2 },
+                        { label: 'Innings 2', data: d2, borderColor: '#f59e0b', tension: 0.4, pointRadius: 0, borderWidth: 2 }
                     ]
                 },
                 options: {
                     responsive: true, maintainAspectRatio: false,
-                    plugins: { legend: { position: 'bottom' } },
-                    scales: { x: { display: false }, y: { beginAtZero: true } }
-                }
-            });
-
-            // 2. Partnership Chart
-            const p = state.partnership;
-            const p1Name = state.batsmen[p.p1Id]?.name || "ব্যাটসম্যান ১";
-            const p2Name = state.batsmen[p.p2Id]?.name || "ব্যাটসম্যান ২";
-            document.getElementById('partnerText').innerText = `${p.runs} রান (${p.balls} বল)`;
-
-            if(partnerChartInstance) partnerChartInstance.destroy();
-            partnerChartInstance = new Chart(ctxPartner, {
-                type: 'doughnut',
-                data: {
-                    labels: [p1Name, p2Name, 'এক্সট্রা'],
-                    datasets: [{
-                        data: [p.p1Runs, p.p2Runs, p.extras],
-                        backgroundColor: ['#3b82f6', '#10b981', '#9ca3af'], borderWidth: 0
-                    }]
-                },
-                options: {
-                    responsive: true, maintainAspectRatio: false, cutout: '70%',
-                    plugins: { legend: { position: 'bottom', labels: { boxWidth: 10, font: {size: 10} } } }
+                    plugins: { legend: { display: true, labels: { color: '#9ca3af', font: {size: 10} } } },
+                    scales: {
+                        x: { display: false },
+                        y: { grid: { color: '#374151', display: false }, ticks: { color: '#9ca3af' } }
+                    }
                 }
             });
         }
-        
-        // --- WIN PROBABILITY & FAN POLL ---
-        function updateWinProbability(match, state) {
-            const el = document.getElementById('winProbContainer');
-            if(match.status !== 'live' || match.currentInnings === 1) { el.classList.add('hidden'); return; }
-            el.classList.remove('hidden');
 
-            const target = state.innings[1].runs + 1;
-            const current = state.innings[2].runs;
-            const wicketsDown = state.innings[2].wickets;
-            const ballsBowled = (state.innings[2].overs * 6) + state.innings[2].balls;
-            const totalBalls = match.oversLimit * 6;
-            const ballsRem = totalBalls - ballsBowled;
-            const runsNeed = target - current;
-            const rrr = ballsRem > 0 ? (runsNeed / (ballsRem/6)) : 99;
-            
-            let winProbA = 50; 
-            if(rrr > 12) winProbA += 30; else if(rrr > 10) winProbA += 20; else if(rrr > 8) winProbA += 10;
-            else if(rrr < 6) winProbA -= 15; else if(rrr < 4) winProbA -= 30;
-            if(wicketsDown > 7) winProbA += 30; else if(wicketsDown > 5) winProbA += 15;
-            else if(wicketsDown < 2 && ballsBowled > 30) winProbA -= 15;
-            
-            winProbA = Math.min(95, Math.max(5, winProbA));
-            const winProbB = 100 - winProbA;
-
-            document.getElementById('winProbA').innerText = `${match.teamAName.substring(0,3)} ${Math.round(winProbA)}%`;
-            document.getElementById('winProbB').innerText = `${Math.round(winProbB)}% ${match.teamBName.substring(0,3)}`;
-            document.getElementById('winBarA').style.width = `${winProbA}%`;
-            document.getElementById('winBarB').style.width = `${winProbB}%`;
-        }
-
-        window.votePoll = () => {
-             // Mock poll update
-             const left = document.getElementById('pollFillLeft');
-             const right = document.getElementById('pollFillRight');
-             let lVal = parseInt(left.style.width) || 50;
-             if(lVal === 50) {
-                 const newL = Math.floor(Math.random() * (70 - 30 + 1) + 30);
-                 left.style.width = `${newL}%`;
-                 right.style.width = `${100-newL}%`;
-                 left.innerText = `${newL}%`;
-                 right.innerText = `${100-newL}%`;
-             } else {
-                 left.style.width = '50%'; right.style.width = '50%';
-                 left.innerText = ''; right.innerText = '';
-             }
-        }
-
-        window.switchView = (viewName) => {
-            document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
-            document.getElementById(`${viewName}View`).classList.remove('hidden');
-            document.querySelectorAll('.nav-btn').forEach(btn => btn.classList.remove('active-nav-btn', 'bg-green-100', 'dark:bg-green-900'));
-            const activeBtn = document.querySelector(`.nav-btn[data-target="${viewName}"]`);
-            if(activeBtn) activeBtn.classList.add('active-nav-btn', 'bg-green-100', 'dark:bg-green-900');
-            if(viewName === 'live') loadMatches();
-            if(viewName === 'players') loadAllPlayers();
-        };
-
-        window.switchMainTab = (tab) => {
-             document.querySelectorAll('.main-tab-content').forEach(el => el.classList.add('hidden'));
-             document.getElementById(`content-${tab}`).classList.remove('hidden');
-             const tabBtns = ['scorecard', 'commentary', 'analytics'];
-             tabBtns.forEach(t => {
-                 const btn = document.getElementById(`main-tab-${t}`);
-                 if(t === tab) {
-                    btn.classList.add('text-indigo-600', 'border-b-2', 'border-indigo-600'); 
-                    btn.classList.remove('text-gray-500');
-                 } else {
-                    btn.classList.remove('text-indigo-600', 'border-b-2', 'border-indigo-600'); 
-                    btn.classList.add('text-gray-500');
-                 }
-             });
-
-             if(tab === 'analytics' && currentMatchData) setTimeout(() => renderCharts(currentMatchData, currentMatchState), 100);
-             if(tab === 'commentary' && currentMatchState) renderCommentary(currentMatchState.timeline);
-        };
-
-        function renderCommentary(timeline) {
-            const feed = document.getElementById('commFeed');
-            if(!timeline || timeline.length === 0) {
-                feed.innerHTML = '<p class="text-center text-gray-400 py-4">এখনও কোন ধারাভাষ্য নেই।</p>';
-                return;
-            }
-            let html = '';
-            
-            // Limit to last 30 balls
-            timeline.slice(0, 30).forEach(ball => {
-                let ballClass = 'run-normal';
-                let text = "";
+        // --- PLAYER STATS LOGIC ---
+        window.loadAllPlayers = async () => {
+             const list = document.getElementById('playersListContainer');
+             list.innerHTML = `<div class="col-span-full flex justify-center py-10"><div class="animate-spin rounded-full h-8 w-8 border-b-2 border-green-500"></div></div>`;
+             
+             try {
+                const q = query(collection(db, getCollPath('players')), orderBy('totalRuns', 'desc'));
+                const snap = await getDocs(q);
+                list.innerHTML = '';
                 
-                // Get random phrases from DB for text display
-                const getRandom = (arr) => arr[Math.floor(Math.random() * arr.length)];
+                window.allPlayersData = {}; // Cache for modal
 
-                if(ball.isWicket) {
-                    ballClass = 'run-w';
-                    text = `<b>${ball.strikerName}</b> আউট!`;
-                } else if(ball.runs === 4) {
-                    ballClass = 'run-4';
-                    text = "দারুণ চার!";
-                } else if(ball.runs === 6) {
-                    ballClass = 'run-6';
-                    text = "বিশাল ছক্কা!";
-                } else if(ball.runs === 0) {
-                    text = "ডট বল।";
-                } else {
-                     text = `${ball.runs} রান।`;
-                }
-
-                if(ball.extrasType) {
-                    text = `<b>${ball.extrasType}</b> - ${text}`;
-                }
-
-                let ballDisplay = ball.isWicket ? 'W' : (ball.extrasType || ball.runs);
-
-                html += `
-                    <div class="comm-item">
-                        <div class="comm-ball ${ballClass}">${ballDisplay}</div>
-                        <div class="flex justify-between items-start">
+                snap.forEach(doc => {
+                    const p = doc.data();
+                    window.allPlayersData[doc.id] = p;
+                    const initial = p.name.charAt(0);
+                    
+                    list.innerHTML += `
+                        <div class="glass-card rounded-xl p-4 flex items-center gap-4 cursor-pointer hover:bg-white/50 dark:hover:bg-gray-700/50 transition border border-transparent hover:border-green-500/30" onclick="openPlayerModal('${doc.id}')">
+                            <div class="w-12 h-12 rounded-full bg-gradient-to-br from-gray-200 to-gray-300 dark:from-gray-700 dark:to-gray-800 flex items-center justify-center font-bold text-gray-500 dark:text-gray-300 shadow-inner">
+                                ${p.imageUrl ? `<img src="${p.imageUrl}" class="w-full h-full rounded-full object-cover">` : initial}
+                            </div>
                             <div>
-                                <span class="text-xs font-bold text-gray-500 mr-2">${ball.cumulativeOvers || ''}</span>
-                                <span class="text-sm font-bold text-gray-800 dark:text-gray-200">${ball.bowlerName || 'বোলার'} বল করছেন ${ball.strikerName || 'ব্যাটসম্যান'} কে</span>
-                                <p class="text-sm text-gray-600 dark:text-gray-400 mt-1">${text}</p>
+                                <h4 class="font-bold text-gray-800 dark:text-gray-100 font-display text-lg">${p.name}</h4>
+                                <div class="flex gap-2 text-xs mt-1">
+                                    <span class="bg-emerald-100 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400 px-2 py-0.5 rounded font-medium">Runs: ${p.totalRuns||0}</span>
+                                    <span class="bg-indigo-100 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400 px-2 py-0.5 rounded font-medium">Wkts: ${p.totalWickets||0}</span>
+                                </div>
                             </div>
                         </div>
-                    </div>
-                `;
-            });
-            feed.innerHTML = html;
-        }
-
-        function renderMatchCard(match) {
-            const isLive = match.status === 'live';
-            let timeDisplay = "";
-            if (isLive && match.createdAt) {
-                const startMs = match.createdAt.toDate ? match.createdAt.toDate().getTime() : Date.now();
-                timeDisplay = `<div class="text-xs text-green-600 font-mono mt-2 flex items-center justify-center bg-green-50 dark:bg-green-900/20 py-1 rounded"><i class="fas fa-clock mr-1"></i>চলছে: <span class="live-match-timer font-bold" data-start="${startMs}">00:00:00</span></div>`;
-            } else if (match.status === 'completed' && match.createdAt && match.endedAt) {
-                const start = match.createdAt.toDate ? match.createdAt.toDate() : new Date(match.createdAt);
-                const end = match.endedAt.toDate ? match.endedAt.toDate() : new Date(match.endedAt);
-                const diff = end - start;
-                timeDisplay = `<div class="text-xs text-gray-500 font-mono mt-2 flex items-center justify-center bg-gray-50 dark:bg-gray-700/30 py-1 rounded"><i class="fas fa-history mr-1"></i>সময়কাল: ${formatDuration(diff)}</div>`;
-            }
-
-            return `
-                <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition overflow-hidden border-l-4 ${isLive ? 'border-red-500' : 'border-gray-300'} group">
-                    <div class="p-4 cursor-pointer" onclick="openMatch('${match.id}')">
-                        <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold uppercase text-gray-400 font-display tracking-wider">${match.tournamentName || 'বন্ধুত্বপূর্ণ'}</span>
-                            ${isLive ? '<span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold animate-pulse">LIVE</span>' : ''}
-                        </div>
-                        <div class="flex justify-between items-center">
-                            <div><h3 class="font-bold text-lg font-display text-gray-800 dark:text-gray-100">${match.teamAName}</h3><p class="text-gray-600 dark:text-gray-400 text-sm font-bold">${match.score?.teamA || '0/0'}</p></div>
-                            <span class="text-gray-300 font-bold text-xl">বনাম</span>
-                            <div class="text-right"><h3 class="font-bold text-lg font-display text-gray-800 dark:text-gray-100">${match.teamBName}</h3><p class="text-gray-600 dark:text-gray-400 text-sm font-bold">${match.score?.teamB || '0/0'}</p></div>
-                        </div>
-                        ${timeDisplay}
-                    </div>
-                </div>
-            `;
-        }
-
-        function loadMatches() {
-            if (matchesListUnsubscribe) matchesListUnsubscribe(); 
-            if(matchTimerInterval) clearInterval(matchTimerInterval);
-            const list = document.getElementById('matchesList');
-            const q = query(collection(db, getCollPath('matches')), orderBy('createdAt', 'desc'));
-            list.innerHTML = `<div class="text-center py-10 col-span-full"><i class="fas fa-circle-notch fa-spin text-3xl text-green-500"></i></div>`;
-            matchesListUnsubscribe = onSnapshot(q, (snapshot) => {
-                if(matchTimerInterval) clearInterval(matchTimerInterval);
-                list.innerHTML = '';
-                if(snapshot.empty) { list.innerHTML = '<div class="col-span-full text-center py-10"><i class="fas fa-baseball-bat-ball text-4xl text-gray-300 mb-3"></i><p class="text-gray-500">কোনো ম্যাচ পাওয়া যায়নি।</p></div>'; return; }
-                const grouped = {};
-                snapshot.forEach(doc => {
-                    const m = {id: doc.id, ...doc.data()};
-                    const d = m.createdAt ? (m.createdAt.toDate ? m.createdAt.toDate() : new Date(m.createdAt)).toLocaleDateString('bn-BD', { weekday: 'long', month: 'short', day: 'numeric' }) : "Unknown";
-                    if(!grouped[d]) grouped[d] = []; grouped[d].push(m);
+                    `;
                 });
-                Object.keys(grouped).forEach(d => {
-                    list.innerHTML += `<div class="col-span-full mt-2 mb-1"><h3 class="text-gray-500 dark:text-gray-400 font-bold border-b dark:border-gray-700 pb-1 text-xs uppercase tracking-wider"><i class="fas fa-calendar-day mr-2"></i> ${d}</h3></div>`;
-                    grouped[d].forEach(m => list.innerHTML += renderMatchCard(m));
-                });
-                startMatchTimers();
-            });
-        }
-        
-        function startMatchTimers() {
-            const update = () => {
-                const now = Date.now();
-                document.querySelectorAll('.live-match-timer').forEach(el => {
-                    const start = parseInt(el.getAttribute('data-start'));
-                    if(!isNaN(start)) el.innerText = formatDuration(now - start);
-                });
-            };
-            update(); matchTimerInterval = setInterval(update, 1000);
-        }
-
-        function formatDuration(ms) {
-            if(ms < 0) ms = 0;
-            const h = Math.floor(ms / 3600000); const m = Math.floor((ms % 3600000) / 60000); const s = Math.floor((ms % 60000) / 1000);
-            return `${h.toString().padStart(2,'0')}:${m.toString().padStart(2,'0')}:${s.toString().padStart(2,'0')}`;
-        }
-
-        window.openMatch = (matchId) => {
-            currentMatchId = matchId; currentMatchData = null; lastProcessedBallId = 0;
-            switchView('matchDetail');
-            if(currentMatchUnsubscribe) currentMatchUnsubscribe();
-            currentMatchUnsubscribe = onSnapshot(doc(db, getCollPath('matches'), matchId), (docSnap) => {
-                if (docSnap.exists()) {
-                    const freshData = docSnap.data();
-                    currentMatchState = calculateMatchState(freshData); 
-                    currentMatchData = freshData;
-                    renderScoreboard(freshData, currentMatchState);
-                } else { showToast("ত্রুটি", "ম্যাচটি পাওয়া যায়নি"); switchView('live'); }
-            });
-        };
-
-        window.switchLiveTab = (team) => {
-            const tabA = document.getElementById('live-tab-teamA'); const tabB = document.getElementById('live-tab-teamB');
-            const contentA = document.getElementById('live-content-teamA'); const contentB = document.getElementById('live-content-teamB');
-            const activeClass = ['text-indigo-600', 'border-b-2', 'border-indigo-600', 'bg-white', 'dark:bg-gray-800'];
-            const inactiveClass = ['text-gray-500', 'hover:bg-white'];
-            if(team === 'teamA') {
-                tabA.classList.add(...activeClass); tabA.classList.remove('text-gray-500'); tabB.classList.remove(...activeClass); tabB.classList.add('text-gray-500');
-                contentA.classList.remove('hidden'); contentB.classList.add('hidden');
-            } else {
-                tabB.classList.add(...activeClass); tabB.classList.remove('text-gray-500'); tabA.classList.remove(...activeClass); tabA.classList.add('text-gray-500');
-                contentB.classList.remove('hidden'); contentA.classList.add('hidden');
-            }
-        };
-
-        function renderScoreboard(match, state) {
-            const inn = state.currentInnings; const innData = state.innings[inn];
-            document.getElementById('teamAName').innerText = match.teamAName; document.getElementById('teamBName').innerText = match.teamBName;
-            document.getElementById('live-tab-teamA').innerText = match.teamAName; document.getElementById('live-tab-teamB').innerText = match.teamBName;
-            document.getElementById('matchTournamentName').innerText = (match.type || 'ম্যাচ') + ' • ' + (match.tournamentName || 'বন্ধুত্বপূর্ণ');
-            document.getElementById('matchHostName').innerText = match.createdByName ? `আয়োজক: ${match.createdByName}` : '';
-            document.getElementById('matchResult').innerText = match.result || (match.status === 'live' ? 'খেলা চলছে' : 'খেলা শেষ');
-            
-            document.getElementById('teamAScore').innerText = `${state.innings[1].runs}/${state.innings[1].wickets}`; document.getElementById('teamAOvers').innerText = `(${state.innings[1].displayOvers})`;
-            if (match.currentInnings === 2 || match.status === 'completed') {
-                document.getElementById('teamBScore').innerText = `${state.innings[2].runs}/${state.innings[2].wickets}`; document.getElementById('teamBOvers').innerText = `(${state.innings[2].displayOvers})`;
-            } else { document.getElementById('teamBScore').innerText = "ব্যাট করেনি"; document.getElementById('teamBOvers').innerText = ""; }
-
-            renderLiveFullScorecard(match, state);
-            updateWinProbability(match, state);
-            
-            // Show Fan Poll if Live
-            if(match.status === 'live') document.getElementById('fanPollSection').classList.remove('hidden');
-            else document.getElementById('fanPollSection').classList.add('hidden');
-
-            const timeline = document.getElementById('recentBallsContainer'); timeline.innerHTML = '';
-            state.timeline.slice(0, 20).forEach(b => {
-                let color = 'bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-300'; let txt = b.runs; let border = "border-gray-200 dark:border-gray-600";
-                if(b.isWicket) { color = 'bg-red-500 text-white'; txt='W'; border = 'border-red-600'; }
-                else if(b.runs === 4) { color = 'bg-blue-500 text-white'; border = 'border-blue-600'; }
-                else if(b.runs === 6) { color = 'bg-green-600 text-white'; border = 'border-green-700'; }
-                else if(b.extrasType) { color = 'bg-yellow-100 dark:bg-yellow-900/50 text-yellow-700'; txt=b.extrasType; border = 'border-yellow-300'; }
-                timeline.innerHTML += `<div class="${color} border ${border} score-ball shadow-sm flex-shrink-0 text-xs">${txt}</div>`;
-            });
-            
-            const crr = (innData.runs / (Math.max(1, innData.overs * 6 + innData.balls)/6)).toFixed(2);
-            document.getElementById('matchCRR').innerText = `রান রেট: ${crr}`;
-
-            if (inn === 2 || match.status === 'completed') {
-                const target = state.innings[1].runs + 1;
-                document.getElementById('matchTargetDisplay').innerText = `লক্ষ্য: ${target}`; document.getElementById('matchTargetDisplay').classList.remove('hidden');
-                if (match.status === 'live') {
-                    const runsNeed = Math.max(0, target - state.innings[2].runs); const ballsRem = (match.oversLimit * 6) - (state.innings[2].overs * 6 + state.innings[2].balls);
-                    document.getElementById('matchEquation').innerText = `${ballsRem} বলে ${runsNeed} রান প্রয়োজন`; document.getElementById('matchEquation').classList.remove('hidden');
-                } else { document.getElementById('matchEquation').classList.add('hidden'); }
-            } else { document.getElementById('matchTargetDisplay').classList.add('hidden'); document.getElementById('matchEquation').classList.add('hidden'); }
-            
-            // Update Commentary if tab is active
-            if(!document.getElementById('content-commentary').classList.contains('hidden')) {
-                renderCommentary(state.timeline);
-            }
-            if(!document.getElementById('content-analytics').classList.contains('hidden')) { renderCharts(match, state); }
-        }
-
-        function renderLiveFullScorecard(match, state) {
-            const renderSquadTable = (squad, elementId) => {
-                const container = document.getElementById(elementId);
-                if(!squad) { container.innerHTML = '<p class="p-4 text-center text-gray-500">দলের তথ্য নেই</p>'; return; }
-                let batHtml = `<div class="mb-4"><h5 class="bg-gray-50 dark:bg-gray-700/50 p-2 text-xs font-bold uppercase text-gray-500 tracking-wider">ব্যাটিং</h5><table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b dark:border-gray-700"><tr><th class="text-left py-2 px-3">ব্যাটার</th><th class="text-right py-2 px-2">রান</th><th class="text-right py-2 px-2">বল</th><th class="text-right py-2 px-1">৪</th><th class="text-right py-2 px-1">৬</th><th class="text-right py-2 px-2">এস.আর</th></tr></thead><tbody>`;
-                const activeStriker = match.currentStrikerId; const activeNonStriker = match.currentNonStrikerId;
-                squad.forEach(p => {
-                    const stats = state.batsmen[p.id]; let rowClass = "border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition"; let nameDisplay = p.name; let runs="-", balls="-", fours="-", sixes="-", sr="-", status="";
-                    if (stats) {
-                        runs = stats.runs; balls = stats.balls; fours = stats.fours; sixes = stats.sixes; sr = stats.balls > 0 ? ((stats.runs/stats.balls)*100).toFixed(0) : "0";
-                        if (stats.out) { status = `<span class="text-red-500 text-[10px] ml-1 uppercase">(${stats.out})</span>`; rowClass += " opacity-75"; }
-                        else if (p.id === activeStriker || p.id === activeNonStriker) { status = `<span class="text-green-500 text-[10px] ml-1 animate-pulse">●</span>`; rowClass += " bg-green-50 dark:bg-green-900/10 font-medium"; if(p.id === activeStriker) nameDisplay += " *"; }
-                    }
-                    if(stats || p.id === activeStriker || p.id === activeNonStriker) {
-                        batHtml += `<tr class="${rowClass}"><td class="py-2.5 px-3"><div class="text-gray-800 dark:text-gray-200">${nameDisplay} ${status}</div></td><td class="text-right font-bold px-2">${runs}</td><td class="text-right text-gray-500 px-2">${balls}</td><td class="text-right text-gray-400 px-1">${fours}</td><td class="text-right text-gray-400 px-1">${sixes}</td><td class="text-right text-xs text-gray-500 px-2">${sr}</td></tr>`;
-                    }
-                });
-                batHtml += `</tbody></table></div>`;
-                let bowlHtml = `<div class="mb-2"><h5 class="bg-gray-50 dark:bg-gray-700/50 p-2 text-xs font-bold uppercase text-gray-500 tracking-wider">বোলিং</h5><table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b dark:border-gray-700"><tr><th class="text-left py-2 px-3">বোলার</th><th class="text-right py-2 px-2">ওভার</th><th class="text-right py-2 px-2">মেডেন</th><th class="text-right py-2 px-2">রান</th><th class="text-right py-2 px-2">উইকেট</th><th class="text-right py-2 px-2">ইকো</th></tr></thead><tbody>`;
-                let bowlerFound = false;
-                squad.forEach(p => {
-                    const stats = state.bowlers[p.id];
-                    if(stats) {
-                        bowlerFound = true; const overs = Math.floor(stats.balls/6) + '.' + (stats.balls%6); const eco = stats.balls > 0 ? ((stats.runs/stats.balls)*6).toFixed(1) : "0.0"; const isCurrent = (match.currentBowlerId === p.id);
-                        bowlHtml += `<tr class="border-b dark:border-gray-700 ${isCurrent ? 'bg-blue-50 dark:bg-blue-900/10' : ''}"><td class="text-left py-2 px-3 ${isCurrent ? 'font-bold text-blue-700 dark:text-blue-300' : ''}">${p.name} ${isCurrent ? '<span class="text-[10px] ml-1">●</span>' : ''}</td><td class="text-right px-2">${overs}</td><td class="text-right px-2 text-gray-400">${stats.maidens}</td><td class="text-right px-2">${stats.runs}</td><td class="text-right px-2 font-bold text-red-600">${stats.wickets}</td><td class="text-right px-2 text-xs text-gray-500">${eco}</td></tr>`;
-                    }
-                });
-                if(!bowlerFound) bowlHtml += `<tr><td colspan="6" class="text-center py-2 text-gray-400 text-xs">বোলার নেই</td></tr>`; bowlHtml += `</tbody></table></div>`;
-                container.innerHTML = batHtml + bowlHtml;
-            };
-            renderSquadTable(match.squadA, 'live-content-teamA'); renderSquadTable(match.squadB, 'live-content-teamB');
-        }
-
-        window.loadAllPlayers = async () => {
-            const list = document.getElementById('playersListContainer'); list.innerHTML = '<div class="col-span-full text-center"><i class="fas fa-spinner fa-spin text-2xl"></i> তথ্য লোড হচ্ছে...</div>';
-            try {
-                const q = query(collection(db, getCollPath('players')), orderBy('totalRuns', 'desc')); const querySnapshot = await getDocs(q); list.innerHTML = '';
-                if(querySnapshot.empty) { list.innerHTML = '<div class="col-span-full text-center text-gray-500">কোনো খেলোয়াড়ের তথ্য নেই।</div>'; return; }
-                window.allPlayersData = {};
-                querySnapshot.forEach((doc) => {
-                    const p = doc.data(); window.allPlayersData[doc.id] = p;
-                    const avatarHtml = p.imageUrl ? `<img src="${p.imageUrl}" class="w-12 h-12 rounded-full object-cover border-2 border-purple-500 bg-white">` : `<div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center font-bold text-lg text-purple-600">${p.name.charAt(0).toUpperCase()}</div>`;
-                    list.innerHTML += `<div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer border-t-4 border-purple-500 player-card" onclick="openPlayerProfile('${doc.id}')"><div class="flex items-center space-x-4">${avatarHtml}<div><h3 class="font-bold text-lg leading-tight player-name font-display">${p.name}</h3><div class="text-xs text-gray-500 mt-1 space-x-2"><span class="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded"><i class="fas fa-baseball-bat-ball text-gray-400 mr-1"></i>${p.totalRuns || 0}</span><span class="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded"><i class="fas fa-bullseye text-gray-400 mr-1"></i>${p.totalWickets || 0}</span></div></div></div></div>`;
-                });
-            } catch(e) { list.innerHTML = '<p class="text-red-500 text-center col-span-full">তথ্য লোড করতে সমস্যা হচ্ছে।</p>'; }
+             } catch(e) { console.log(e); }
         };
 
         window.filterPlayers = () => {
-            const input = document.getElementById('playerSearch').value.toLowerCase();
-            document.querySelectorAll('.player-card').forEach(card => {
-                const name = card.querySelector('.player-name').innerText.toLowerCase(); card.style.display = name.includes(input) ? "" : "none";
+            const term = document.getElementById('playerSearch').value.toLowerCase();
+            const cards = document.querySelectorAll('#playersListContainer > div');
+            cards.forEach(card => {
+                const name = card.querySelector('h4').innerText.toLowerCase();
+                card.style.display = name.includes(term) ? 'flex' : 'none';
             });
         };
 
-        window.openPlayerProfile = (id) => {
-            const p = window.allPlayersData[id]; if(!p) return;
-            document.getElementById('profileName').innerText = p.name; document.getElementById('profileUniqueId').innerText = `ID: ${id}`;
-            const avatarEl = document.getElementById('profileAvatar');
-            if(p.imageUrl) { avatarEl.innerHTML = `<img src="${p.imageUrl}" class="w-full h-full object-cover">`; avatarEl.className = "w-24 h-24 rounded-full border-4 border-white dark:border-gray-800 shadow-lg overflow-hidden bg-white"; } 
-            else { avatarEl.innerHTML = p.name.charAt(0).toUpperCase(); avatarEl.className = "w-24 h-24 bg-white dark:bg-gray-700 rounded-full border-4 border-white dark:border-gray-800 flex items-center justify-center text-3xl font-bold text-gray-400 shadow-lg overflow-hidden"; }
-            document.getElementById('profMatches').innerText = p.totalMatches || 0; document.getElementById('profRuns').innerText = p.totalRuns || 0;
-            document.getElementById('profBalls').innerText = p.totalBalls || 0; document.getElementById('profSR').innerText = p.totalBalls > 0 ? ((p.totalRuns / p.totalBalls) * 100).toFixed(2) : '0.00';
-            document.getElementById('profBoundaries').innerText = `${p.totalFours || 0} / ${p.totalSixes || 0}`; document.getElementById('profBowlInns').innerText = p.bowlInnings || 0;
-            document.getElementById('profWickets').innerText = p.totalWickets || 0; const t = p.totalOversBalls || 0;
-            document.getElementById('profOvers').innerText = `${Math.floor(t/6)}.${t%6}`; document.getElementById('profRunsConceded').innerText = p.totalRunsConceded || 0;
-            document.getElementById('profEco').innerText = t > 0 ? ((p.totalRunsConceded / t) * 6).toFixed(2) : '0.00';
-            document.getElementById('profBestBowl').innerText = p.bestBowling || "-/-";
-            document.getElementById('playerProfileModal').classList.remove('opacity-0', 'pointer-events-none'); document.body.classList.add('modal-active');
+        window.openPlayerModal = (id) => {
+            const p = window.allPlayersData[id];
+            if(!p) return;
+            
+            document.getElementById('modalName').innerText = p.name;
+            document.getElementById('modalId').innerText = `ID: ${id}`;
+            const av = document.getElementById('modalAvatar');
+            if(p.imageUrl) av.innerHTML = `<img src="${p.imageUrl}" class="w-full h-full object-cover">`;
+            else av.innerText = p.name.charAt(0);
+            
+            document.getElementById('mRuns').innerText = p.totalRuns || 0;
+            document.getElementById('mBalls').innerText = p.totalBalls || 0;
+            document.getElementById('mHS').innerText = p.highScore || 0;
+            const sr = p.totalBalls > 0 ? ((p.totalRuns/p.totalBalls)*100).toFixed(2) : '0.00';
+            document.getElementById('mSR').innerText = sr;
+            
+            document.getElementById('mWickets').innerText = p.totalWickets || 0;
+            const overs = Math.floor((p.totalOversBalls||0)/6) + '.' + ((p.totalOversBalls||0)%6);
+            document.getElementById('mOvers').innerText = overs;
+            const eco = (p.totalOversBalls||0) > 0 ? ((p.totalRunsConceded||0)/(p.totalOversBalls)*6).toFixed(2) : '0.00';
+            document.getElementById('mEco').innerText = eco;
+            document.getElementById('mBest').innerText = p.bestBowling || '-/-';
+
+            // Show Modal
+            const modal = document.getElementById('playerModal');
+            const content = document.getElementById('modalContent');
+            const overlay = document.getElementById('modalOverlay');
+            
+            modal.classList.remove('pointer-events-none');
+            overlay.classList.remove('opacity-0');
+            content.classList.remove('translate-y-full');
         };
 
-        window.closeModal = (modalId) => {
-            document.getElementById(modalId).classList.add('opacity-0', 'pointer-events-none'); document.body.classList.remove('modal-active');
+        window.closePlayerModal = () => {
+            const modal = document.getElementById('playerModal');
+            const content = document.getElementById('modalContent');
+            const overlay = document.getElementById('modalOverlay');
+            
+            content.classList.add('translate-y-full');
+            overlay.classList.add('opacity-0');
+            setTimeout(() => {
+                modal.classList.add('pointer-events-none');
+            }, 300);
         };
 
-        document.getElementById('themeToggle').addEventListener('click', () => { document.documentElement.classList.toggle('dark'); });
+        window.switchLiveTab = (team) => {
+            const btnA = document.getElementById('btn-teamA');
+            const btnB = document.getElementById('btn-teamB');
+            const conA = document.getElementById('live-content-teamA');
+            const conB = document.getElementById('live-content-teamB');
+            
+            if(team === 'teamA') {
+                btnA.className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-gray-600 shadow-sm text-gray-800 dark:text-white transition-all";
+                btnB.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all";
+                conA.classList.remove('hidden'); conB.classList.add('hidden');
+            } else {
+                btnB.className = "flex-1 py-1.5 text-xs font-bold rounded-md bg-white dark:bg-gray-600 shadow-sm text-gray-800 dark:text-white transition-all";
+                btnA.className = "flex-1 py-1.5 text-xs font-bold rounded-md text-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600 transition-all";
+                conB.classList.remove('hidden'); conA.classList.add('hidden');
+            }
+        };
+
     </script>
 </body>
 </html>
