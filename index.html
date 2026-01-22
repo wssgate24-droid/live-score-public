@@ -410,6 +410,10 @@
         const db = getFirestore(app);
         const appId = 'cricket-app-v1';
         
+        // --- SOUND EFFECTS ---
+        // সাউন্ড ফাইল লোড করা হচ্ছে
+        const batHitSound = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3');
+
         let currentMatchId = null; 
         let currentMatchUnsubscribe = null;
         let matchesListUnsubscribe = null; 
@@ -655,6 +659,18 @@
 
         // --- EFFECTS SYSTEM ---
         function triggerEventEffects(ball) {
+            // নতুন বলের আপডেট আসলে সাউন্ড প্লে হবে
+            try {
+                batHitSound.currentTime = 0;
+                batHitSound.volume = 0.5; // সাউন্ড ভলিউম ৫০%
+                batHitSound.play().catch(e => {
+                    // যদি ব্রাউজার অটো-প্লে ব্লক করে, তবে কনসোলে লগ দেখাবে
+                    console.log("Audio autoplay blocked until user interacts.");
+                });
+            } catch(e) {
+                console.error(e);
+            }
+
             // 1. Confetti & Overlay
             if(ball.runs === 6 || ball.runs === 4 || ball.isWicket) {
                 const overlay = document.getElementById('eventOverlay');
