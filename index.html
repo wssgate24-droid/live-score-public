@@ -126,6 +126,14 @@
             transform: scale(0); transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
         }
         .active .big-impact-text { transform: scale(1); }
+        
+        .hide-scrollbar::-webkit-scrollbar {
+            display: none;
+        }
+        .hide-scrollbar {
+            -ms-overflow-style: none;
+            scrollbar-width: none;
+        }
     </style>
 </head>
 <body class="bg-gray-50 dark:bg-app-bg text-gray-800 dark:text-gray-100 min-h-screen transition-colors duration-300 font-sans pb-24 selection:bg-green-500 selection:text-white">
@@ -155,7 +163,7 @@
     <!-- Header -->
     <header class="fixed top-0 left-0 w-full z-40 glass shadow-sm transition-all duration-300">
         <div class="max-w-3xl mx-auto px-4 h-16 flex items-center justify-between">
-            <div class="flex items-center gap-3" onclick="switchView('live')">
+            <div class="flex items-center gap-3 cursor-pointer" onclick="switchView('live')">
                 <div class="relative">
                     <img src="https://i.postimg.cc/FRMTxVb2/app-icon-android.png" class="w-9 h-9 rounded-xl shadow-lg border border-white/10">
                     <div class="absolute -bottom-1 -right-1 w-3 h-3 bg-green-500 rounded-full border-2 border-white dark:border-gray-900 animate-pulse"></div>
@@ -262,13 +270,14 @@
 
                     <div class="mt-6 pt-4 border-t border-gray-100 dark:border-gray-700/50 flex flex-wrap justify-center gap-3 text-xs font-bold">
                         <span id="matchResult" class="text-green-600 dark:text-green-400">Match Started</span>
+                        <!-- Target ID kept, default hidden -->
                         <span id="matchTargetDisplay" class="hidden text-blue-500 bg-blue-50 dark:bg-blue-900/20 px-2 py-0.5 rounded">Target: 0</span>
-                        <span id="matchCRR" class="text-gray-500">CRR: 0.00</span>
+                        <span id="matchCRR" class="text-gray-500 hidden">CRR: 0.00</span>
                     </div>
                 </div>
 
                 <!-- Win Probability Bar -->
-                <div id="winProbContainer" class="bg-gray-100 dark:bg-gray-800/50 h-1.5 w-full flex relative hidden">
+                <div id="winProbContainer" class="bg-gray-100 dark:bg-gray-800/50 h-1.5 w-full flex relative hidden mt-2 rounded-full overflow-hidden">
                     <div id="winBarA" class="h-full bg-blue-500 transition-all duration-1000" style="width: 50%"></div>
                     <div id="winBarB" class="h-full bg-orange-500 transition-all duration-1000" style="width: 50%"></div>
                     <!-- Center Marker -->
@@ -279,7 +288,7 @@
             <!-- Recent Balls (Horizontal Scroll) -->
             <div class="mb-6">
                 <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-3 ml-1">Recent Deliveries</h4>
-                <div id="recentBallsContainer" class="flex gap-2 overflow-x-auto pb-4 hide-scrollbar snap-x">
+                <div id="recentBallsContainer" class="flex gap-2 overflow-x-auto pb-4 hide-scrollbar snap-x min-h-[40px]">
                     <!-- Balls injected by JS -->
                 </div>
             </div>
@@ -411,7 +420,6 @@
         const appId = 'cricket-app-v1';
         
         // --- SOUND EFFECTS ---
-        // সাউন্ড ফাইল লোড করা হচ্ছে
         const batHitSound = new Audio('https://cdn.pixabay.com/audio/2022/03/10/audio_c8c8a73467.mp3');
 
         let currentMatchId = null; 
@@ -556,9 +564,37 @@
             lastProcessedBallId = 0;
             switchView('matchDetail');
             
-            // Reset UI
+            // --- FIX START: Reset UI completely to prevent old data flicker ---
+            // 1. Reset Scores & Names
             document.getElementById('teamAScore').innerText = '0/0';
             document.getElementById('teamBScore').innerText = '0/0';
+            document.getElementById('teamAOvers').innerText = '0.0 ov';
+            document.getElementById('teamBOvers').innerText = '0.0 ov';
+            document.getElementById('teamAName').innerText = 'Loading...';
+            document.getElementById('teamBName').innerText = 'Loading...';
+            document.getElementById('matchStatusBadge').innerText = 'LOADING...';
+            
+            // 2. Hide Target & Win Probability explicitly (Fixes the issue)
+            document.getElementById('matchTargetDisplay').classList.add('hidden');
+            document.getElementById('winProbContainer').classList.add('hidden');
+            document.getElementById('matchResult').innerText = '';
+
+            // 3. Clear Lists
+            document.getElementById('recentBallsContainer').innerHTML = '';
+            document.getElementById('commFeed').innerHTML = '';
+            document.getElementById('live-content-teamA').innerHTML = '<div class="text-center p-4 text-gray-400">Loading Scorecard...</div>';
+            document.getElementById('live-content-teamB').innerHTML = '';
+            
+            // 4. Reset Tabs
+            switchMainTab('scorecard');
+            switchLiveTab('teamA');
+
+            // 5. Destroy old chart instance to prevent glitch
+            if(wormChartInstance) {
+                wormChartInstance.destroy();
+                wormChartInstance = null;
+            }
+            // --- FIX END ---
             
             if(currentMatchUnsubscribe) currentMatchUnsubscribe();
             
@@ -735,9 +771,21 @@
             document.getElementById('teamBName').innerText = match.teamBName;
             document.getElementById('matchTournamentName').innerText = match.tournamentName || 'Match Center';
             document.getElementById('matchResult').innerText = match.result || (match.status === 'live' ? 'Match In Progress' : 'Result Pending');
+            
+            const badge = document.getElementById('matchStatusBadge');
+            if(match.status === 'live') {
+                badge.className = "bg-red-500 text-white text-[10px] px-2.5 py-1 rounded-md uppercase font-bold tracking-wider shadow-sm animate-pulse";
+                badge.innerText = "LIVE";
+            } else {
+                badge.className = "bg-gray-500 text-white text-[10px] px-2.5 py-1 rounded-md uppercase font-bold tracking-wider shadow-sm";
+                badge.innerText = "FINISHED";
+            }
 
             document.getElementById('teamAScore').innerText = `${i1.runs}/${i1.wickets}`;
             document.getElementById('teamAOvers').innerText = `${i1.overs}.${i1.balls} ov`;
+
+            const targetEl = document.getElementById('matchTargetDisplay');
+            const winProbEl = document.getElementById('winProbContainer');
 
             if(match.currentInnings === 2 || match.status === 'completed') {
                 document.getElementById('teamBScore').innerText = `${i2.runs}/${i2.wickets}`;
@@ -745,14 +793,12 @@
                 
                 // Target Logic
                 const target = i1.runs + 1;
-                const targetEl = document.getElementById('matchTargetDisplay');
                 targetEl.classList.remove('hidden');
                 targetEl.innerText = `Target: ${target}`;
                 
-                // Win Bar
+                // Win Bar (Only show if LIVE and in 2nd innings)
                 if(match.status === 'live') {
-                    const el = document.getElementById('winProbContainer');
-                    el.classList.remove('hidden');
+                    winProbEl.classList.remove('hidden');
                     // Simple logic for visual only
                     const need = target - i2.runs;
                     const remBalls = (match.oversLimit*6) - ((i2.overs*6)+i2.balls);
@@ -761,11 +807,16 @@
                     if(rrr > 10) probA = 80; else if(rrr > 8) probA = 60; else if(rrr < 6) probA = 30;
                     document.getElementById('winBarA').style.width = `${probA}%`;
                     document.getElementById('winBarB').style.width = `${100-probA}%`;
+                } else {
+                    winProbEl.classList.add('hidden');
                 }
             } else {
                  document.getElementById('teamBScore').innerText = "Yet to Bat";
                  document.getElementById('teamBOvers').innerText = "";
-                 document.getElementById('winProbContainer').classList.add('hidden');
+                 
+                 // Explicitly Hide elements if we are back in 1st innings (unlikely but safe)
+                 targetEl.classList.add('hidden');
+                 winProbEl.classList.add('hidden');
             }
 
             // Recent Balls
