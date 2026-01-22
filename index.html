@@ -1,9 +1,10 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="bn">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CricScore Pro - Live Center</title>
+    <!-- Updated Viewport for Native App Feel (No Zoom, Full Screen, Notch Support) -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <title>ক্রিকস্কোর প্রো - লাইভ সেন্টার</title>
     
     <!-- App Icon / Favicon -->
     <link rel="icon" type="image/png" href="https://i.postimg.cc/FRMTxVb2/app-icon-android.png">
@@ -14,8 +15,8 @@
     <!-- Font Awesome -->
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
-    <!-- Fonts: Added Poppins for a modern mobile app look -->
-    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+    <!-- Fonts: Added Hind Siliguri for better Bengali support & Poppins -->
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Hind+Siliguri:wght@300;400;500;600;700&display=swap" rel="stylesheet">
     <link href="https://fonts.googleapis.com/css2?family=Oswald:wght@500;700&display=swap" rel="stylesheet">
 
     <!-- Chart.js for Graphs -->
@@ -35,8 +36,8 @@
                         }
                     },
                     fontFamily: {
-                        // Updated to Poppins for a smarter look
-                        sans: ['Poppins', 'sans-serif'],
+                        // Prioritize Bengali Font
+                        sans: ['Hind Siliguri', 'Poppins', 'sans-serif'],
                         display: ['Oswald', 'sans-serif'],
                     },
                     animation: {
@@ -72,7 +73,17 @@
     </script>
 
     <style>
-        body { font-family: 'Poppins', sans-serif; }
+        /* Safe Area Support for Notched Phones */
+        body { 
+            font-family: 'Hind Siliguri', sans-serif; 
+            padding-top: env(safe-area-inset-top);
+            padding-bottom: env(safe-area-inset-bottom);
+            padding-left: env(safe-area-inset-left);
+            padding-right: env(safe-area-inset-right);
+            /* Prevent pull-to-refresh on mobile apps to feel native */
+            overscroll-behavior-y: none;
+            -webkit-tap-highlight-color: transparent;
+        }
         .font-display { font-family: 'Oswald', sans-serif; }
         
         .cricket-bg {
@@ -110,7 +121,7 @@
         /* Loading Overlay Styling */
         #globalLoader {
             position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-            background: #0f172a; /* Darker modern background */
+            background: #0f172a; 
             z-index: 9999;
             display: flex; flex-direction: column; justify-content: center; align-items: center;
             color: white; transition: opacity 0.5s ease-out;
@@ -147,23 +158,23 @@
         #eventOverlay.active .event-content { transform: scale(1); }
 
         .big-text {
-            font-family: 'Oswald', sans-serif; font-size: 10rem; font-weight: 900; line-height: 1;
+            font-family: 'Oswald', sans-serif; font-size: 8rem; font-weight: 900; line-height: 1;
             text-shadow: 0 10px 30px rgba(0,0,0,0.5); -webkit-background-clip: text; -webkit-text-fill-color: transparent;
             margin-bottom: 0.5rem; filter: drop-shadow(0 0 10px rgba(255,255,255,0.2));
         }
-        @media (max-width: 640px) { .big-text { font-size: 6rem; } }
+        @media (max-width: 640px) { .big-text { font-size: 5rem; } }
 
         .event-subtext {
-            color: white; font-size: 1.8rem; letter-spacing: 6px; text-transform: uppercase; font-weight: bold;
-            text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 0.5rem 2rem;
+            color: white; font-size: 1.5rem; letter-spacing: 2px; text-transform: uppercase; font-weight: bold;
+            text-shadow: 0 2px 4px rgba(0,0,0,0.8); background: rgba(0,0,0,0.3); padding: 0.5rem 1.5rem;
             border-radius: 50px; border: 1px solid rgba(255,255,255,0.2); backdrop-filter: blur(5px);
-            animation: fadeInUp 0.5s ease-out 0.2s backwards;
+            animation: fadeInUp 0.5s ease-out 0.2s backwards; font-family: 'Hind Siliguri', sans-serif;
         }
 
         .type-wicket .big-text { background: linear-gradient(to bottom, #ff4d4d, #b71c1c); -webkit-background-clip: text; }
         .type-4 .big-text { background: linear-gradient(to bottom, #2196f3, #0d47a1); -webkit-background-clip: text; }
         .type-6 .big-text { background: linear-gradient(to bottom, #4caf50, #1b5e20); -webkit-background-clip: text; }
-        .type-extra .big-text { background: linear-gradient(to bottom, #ffca28, #ff6f00); -webkit-background-clip: text; font-size: 6rem; }
+        .type-extra .big-text { background: linear-gradient(to bottom, #ffca28, #ff6f00); -webkit-background-clip: text; font-size: 5rem; }
 
         .event-bg-pulse {
             position: absolute; top: 50%; left: 50%; transform: translate(-50%, -50%); width: 100vw; height: 100vw;
@@ -186,11 +197,11 @@
             position: fixed; bottom: 20px; right: 20px; z-index: 11000;
             display: flex; flex-direction: column; gap: 10px;
             pointer-events: none;
+            width: 90%; max-width: 400px; /* Better mobile width */
         }
         .toast-item {
             pointer-events: auto;
-            min-width: 300px;
-            max-width: 350px;
+            width: 100%;
             box-shadow: 0 4px 12px rgba(0,0,0,0.15);
             backdrop-filter: blur(8px);
         }
@@ -236,7 +247,7 @@
         </div>
         
         <h2 class="text-3xl font-bold tracking-[0.2em] font-display text-transparent bg-clip-text bg-gradient-to-r from-green-400 to-blue-500 mb-1 drop-shadow-md">CRICSCORE PRO</h2>
-        <p class="text-gray-400 text-xs font-medium uppercase tracking-widest mt-2 animate-pulse">Initializing Live Center...</p>
+        <p class="text-gray-400 text-xs font-medium uppercase tracking-widest mt-2 animate-pulse font-sans">লোডিং হচ্ছে...</p>
     </div>
 
     <!-- Event Overlay -->
@@ -244,7 +255,7 @@
         <div class="event-bg-pulse"></div>
         <div class="event-content">
             <div id="eventBigText" class="big-text">6</div>
-            <div id="eventSubText" class="event-subtext">HUGE SIX!</div>
+            <div id="eventSubText" class="event-subtext">বিশাল ছক্কা!</div>
         </div>
     </div>
 
@@ -261,11 +272,11 @@
                     <span class="font-bold text-xl tracking-tight font-display">CricScore Live</span>
                 </div>
                 <div class="flex items-center space-x-3">
-                    <button id="notifBtn" onclick="openNotifSettings()" class="p-2 rounded hover:bg-white/10 text-gray-400 transition relative" title="Notification Settings">
+                    <button id="notifBtn" onclick="openNotifSettings()" class="p-2 rounded hover:bg-white/10 text-gray-400 transition relative" title="সেটিংস">
                         <i class="fas fa-bell"></i>
                         <span id="notifBadge" class="hidden absolute top-1 right-2 w-2 h-2 bg-red-500 rounded-full border border-cricket-dark"></span>
                     </button>
-                    <button id="themeToggle" class="p-2 rounded hover:bg-white/10 transition" title="Toggle Theme">
+                    <button id="themeToggle" class="p-2 rounded hover:bg-white/10 transition" title="থিম পরিবর্তন">
                         <i class="fas fa-moon"></i>
                     </button>
                 </div>
@@ -278,41 +289,41 @@
         <!-- Navigation Tabs -->
         <div class="flex justify-center sm:justify-start overflow-x-auto space-x-2 mb-6 hide-scroll pb-2">
             <button onclick="switchView('live')" class="nav-btn bg-white dark:bg-gray-800 px-6 py-2 rounded-full shadow hover:bg-green-50 dark:hover:bg-gray-700 whitespace-nowrap active-nav-btn font-medium text-sm" data-target="live">
-                <i class="fas fa-broadcast-tower text-red-500 mr-2"></i><span>Live Matches</span>
+                <i class="fas fa-broadcast-tower text-red-500 mr-2"></i><span>লাইভ ম্যাচ</span>
             </button>
             <button onclick="switchView('tournaments')" class="nav-btn bg-white dark:bg-gray-800 px-6 py-2 rounded-full shadow hover:bg-green-50 dark:hover:bg-gray-700 whitespace-nowrap font-medium text-sm" data-target="tournaments">
-                <i class="fas fa-trophy text-yellow-500 mr-2"></i><span>Tournaments</span>
+                <i class="fas fa-trophy text-yellow-500 mr-2"></i><span>টুর্নামেন্ট</span>
             </button>
             <button onclick="switchView('players')" class="nav-btn bg-white dark:bg-gray-800 px-6 py-2 rounded-full shadow hover:bg-green-50 dark:hover:bg-gray-700 whitespace-nowrap font-medium text-sm" data-target="players">
-                <i class="fas fa-users text-purple-500 mr-2"></i><span>Player Stats</span>
+                <i class="fas fa-users text-purple-500 mr-2"></i><span>প্লেয়ার স্ট্যাটস</span>
             </button>
         </div>
 
         <!-- Live Matches List View -->
         <div id="liveView" class="view-section">
-            <h2 class="text-2xl font-bold mb-4 border-l-4 border-green-500 pl-3 font-display">Match Center</h2>
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-green-500 pl-3 font-display">ম্যাচ সেন্টার</h2>
             <div id="matchesList" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 <div class="text-center py-10 text-gray-500 col-span-full">
                     <i class="fas fa-spinner fa-spin text-3xl"></i>
-                    <p class="mt-2">Connecting to live feed...</p>
+                    <p class="mt-2">লাইভ ফিড লোড হচ্ছে...</p>
                 </div>
             </div>
         </div>
 
         <!-- Player Stats View -->
         <div id="playersView" class="view-section hidden">
-            <h2 class="text-2xl font-bold mb-4 border-l-4 border-purple-500 pl-3 font-display">Player Statistics</h2>
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-purple-500 pl-3 font-display">খেলোয়াড়ের পরিসংখ্যান</h2>
             <div class="mb-4">
-                <input type="text" id="playerSearch" onkeyup="filterPlayers()" placeholder="Search player name..." class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none font-sans text-sm">
+                <input type="text" id="playerSearch" onkeyup="filterPlayers()" placeholder="খেলোয়াড়ের নাম খুঁজুন..." class="w-full p-3 rounded-lg border dark:bg-gray-800 dark:border-gray-700 shadow-sm focus:ring-2 focus:ring-purple-500 focus:outline-none font-sans text-sm">
             </div>
             <div id="playersListContainer" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4"></div>
         </div>
 
         <!-- Tournaments View -->
         <div id="tournamentsView" class="view-section hidden">
-            <h2 class="text-2xl font-bold mb-4 border-l-4 border-yellow-500 pl-3 font-display">Tournaments</h2>
+            <h2 class="text-2xl font-bold mb-4 border-l-4 border-yellow-500 pl-3 font-display">টুর্নামেন্টসমূহ</h2>
             <div id="tournamentList" class="space-y-4">
-                <p class="text-gray-500 text-center py-8">No active tournaments listed.</p>
+                <p class="text-gray-500 text-center py-8">কোনো একটিভ টুর্নামেন্ট নেই।</p>
             </div>
         </div>
 
@@ -320,11 +331,11 @@
         <div id="matchDetailView" class="view-section hidden">
             <div class="flex justify-between items-center mb-4">
                 <button onclick="switchView('live')" class="text-sm text-gray-500 hover:text-green-600 flex items-center transition font-medium">
-                    <i class="fas fa-arrow-left mr-1"></i> Back
+                    <i class="fas fa-arrow-left mr-1"></i> ফিরে যান
                 </button>
                 <button id="audioToggleBtn" onclick="toggleAudio()" class="flex items-center space-x-2 bg-white dark:bg-gray-800 px-4 py-2 rounded-full shadow text-sm font-bold text-gray-500 hover:text-green-600 border dark:border-gray-700 transition hover:shadow-md">
                     <i class="fas fa-volume-mute text-lg" id="audioIcon"></i>
-                    <span id="audioText" class="hidden sm:inline">Commentary Off</span>
+                    <span id="audioText" class="hidden sm:inline">ধারাভাষ্য বন্ধ</span>
                     <div id="audioVisualizer" class="audio-wave hidden"><span></span><span></span><span></span><span></span></div>
                 </button>
             </div>
@@ -350,7 +361,7 @@
                         </div>
                         <div class="text-center w-1/3">
                             <div class="text-xs text-gray-400 uppercase tracking-widest mb-1 font-bold">VS</div>
-                            <div id="matchResult" class="text-sm font-medium text-green-600 dark:text-green-400 leading-tight">Match Started</div>
+                            <div id="matchResult" class="text-sm font-medium text-green-600 dark:text-green-400 leading-tight">খেলা শুরু হয়েছে</div>
                         </div>
                         <div class="text-center w-1/3">
                             <h3 id="teamBName" class="font-bold text-lg sm:text-2xl truncate font-display">Team B</h3>
@@ -368,7 +379,7 @@
                     <!-- Win Probability Widget -->
                     <div id="winProbContainer" class="hidden px-2 pb-2">
                         <div class="flex justify-between text-xs font-bold text-gray-500 mt-4 mb-1">
-                            <span>Win Prob: <span id="winProbA">50%</span></span>
+                            <span>জয়ের সম্ভাবনা: <span id="winProbA">50%</span></span>
                             <span><span id="winProbB">50%</span></span>
                         </div>
                         <div class="win-bar-container">
@@ -386,28 +397,28 @@
                     
                     <!-- Recent Balls Timeline -->
                      <div class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 overflow-x-auto border-l-4 border-blue-500">
-                        <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center tracking-wider"><i class="fas fa-history mr-2"></i> Recent Deliveries</h4>
+                        <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center tracking-wider"><i class="fas fa-history mr-2"></i> সাম্প্রতিক বলগুলো</h4>
                         <div id="recentBallsContainer" class="flex space-x-3 pb-2"></div>
                    </div>
 
                     <!-- Fan Poll Widget -->
                     <div id="fanPollSection" class="bg-white dark:bg-gray-800 rounded-lg shadow p-4 hidden">
-                         <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center tracking-wider"><i class="fas fa-vote-yea mr-2 text-purple-500"></i> Fan Poll: Who will win?</h4>
+                         <h4 class="text-xs font-bold text-gray-500 uppercase mb-3 flex items-center tracking-wider"><i class="fas fa-vote-yea mr-2 text-purple-500"></i> দর্শক পোল: কে জিতবে?</h4>
                          <div class="poll-bar-container" onclick="votePoll()">
                              <div id="pollFillLeft" class="poll-fill poll-left" style="width: 50%"></div>
                              <div class="poll-vs-icon">VS</div>
                              <div id="pollFillRight" class="poll-fill poll-right" style="width: 50%"></div>
                          </div>
-                         <p class="text-xs text-center text-gray-400 mt-2">Tap to vote!</p>
+                         <p class="text-xs text-center text-gray-400 mt-2">ভোট দিতে ট্যাপ করুন!</p>
                     </div>
 
                     <!-- Tabbed Interface -->
                     <div class="bg-white dark:bg-gray-800 rounded-lg shadow overflow-hidden">
                         <!-- Main Tabs -->
                         <div class="flex border-b dark:border-gray-700 bg-gray-50 dark:bg-gray-900/50">
-                            <button onclick="switchMainTab('scorecard')" id="main-tab-scorecard" class="flex-1 py-3 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 focus:outline-none uppercase tracking-wide">Scorecard</button>
-                            <button onclick="switchMainTab('commentary')" id="main-tab-commentary" class="flex-1 py-3 text-sm font-bold text-gray-500 focus:outline-none hover:text-indigo-600 uppercase tracking-wide">Commentary</button>
-                            <button onclick="switchMainTab('analytics')" id="main-tab-analytics" class="flex-1 py-3 text-sm font-bold text-gray-500 focus:outline-none hover:text-indigo-600 uppercase tracking-wide">Analytics</button>
+                            <button onclick="switchMainTab('scorecard')" id="main-tab-scorecard" class="flex-1 py-3 text-sm font-bold text-indigo-600 border-b-2 border-indigo-600 focus:outline-none uppercase tracking-wide">স্কোরকার্ড</button>
+                            <button onclick="switchMainTab('commentary')" id="main-tab-commentary" class="flex-1 py-3 text-sm font-bold text-gray-500 focus:outline-none hover:text-indigo-600 uppercase tracking-wide">ধারাভাষ্য</button>
+                            <button onclick="switchMainTab('analytics')" id="main-tab-analytics" class="flex-1 py-3 text-sm font-bold text-gray-500 focus:outline-none hover:text-indigo-600 uppercase tracking-wide">অ্যানালিটিক্স</button>
                         </div>
                         
                         <!-- Content: Scorecard -->
@@ -425,7 +436,7 @@
                         <!-- Content: Commentary -->
                         <div id="content-commentary" class="main-tab-content hidden p-4">
                             <div id="commFeed" class="space-y-2">
-                                <p class="text-center text-gray-400 py-4">Waiting for match data...</p>
+                                <p class="text-center text-gray-400 py-4">তথ্য অপেক্ষা করছে...</p>
                             </div>
                         </div>
 
@@ -434,18 +445,18 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <!-- Worm Graph -->
                                 <div class="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg">
-                                    <h4 class="text-xs font-bold uppercase text-gray-500 mb-2 text-center">Run Rate Comparison (Worm)</h4>
+                                    <h4 class="text-xs font-bold uppercase text-gray-500 mb-2 text-center">রান রেট তুলনা (ওয়ার্ম)</h4>
                                     <div class="h-64 relative w-full">
                                         <canvas id="wormChart"></canvas>
                                     </div>
                                 </div>
                                 <!-- Partnership -->
                                 <div class="bg-gray-50 dark:bg-gray-700/30 p-4 rounded-lg">
-                                    <h4 class="text-xs font-bold uppercase text-gray-500 mb-2 text-center">Current Partnership</h4>
+                                    <h4 class="text-xs font-bold uppercase text-gray-500 mb-2 text-center">বর্তমান পার্টনারশিপ</h4>
                                     <div class="h-64 relative w-full flex justify-center">
                                         <canvas id="partnershipChart"></canvas>
                                     </div>
-                                    <div id="partnerText" class="text-center text-sm font-bold mt-2 text-gray-600 dark:text-gray-300">Loading...</div>
+                                    <div id="partnerText" class="text-center text-sm font-bold mt-2 text-gray-600 dark:text-gray-300">লোডিং...</div>
                                 </div>
                             </div>
                         </div>
@@ -460,14 +471,14 @@
         <div class="modal-overlay absolute w-full h-full bg-black/60 backdrop-blur-sm" onclick="closeModal('notifSettingsModal')"></div>
         <div class="modal-container bg-white dark:bg-gray-800 w-11/12 max-w-sm mx-auto rounded-xl shadow-2xl z-50 overflow-hidden transform transition-all scale-100">
             <div class="p-4 border-b dark:border-gray-700 flex justify-between items-center bg-gray-50 dark:bg-gray-700/50">
-                <h3 class="font-bold text-lg font-display"><i class="fas fa-bell text-yellow-500 mr-2"></i>Notification Settings</h3>
+                <h3 class="font-bold text-lg font-display"><i class="fas fa-bell text-yellow-500 mr-2"></i>নোটিফিকেশন সেটিংস</h3>
                 <button onclick="closeModal('notifSettingsModal')" class="text-gray-400 hover:text-red-500"><i class="fas fa-times"></i></button>
             </div>
             <div class="p-6 space-y-4">
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="font-bold text-sm">Desktop Notifications</p>
-                        <p class="text-xs text-gray-500">Show native browser popups</p>
+                        <p class="font-bold text-sm">ডেস্কটপ নোটিফিকেশন</p>
+                        <p class="text-xs text-gray-500">ব্রাউজার পপআপ দেখান</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="set-desktop" class="sr-only peer" onchange="toggleNotifSetting('desktop')">
@@ -477,8 +488,8 @@
                 
                 <div class="flex items-center justify-between">
                     <div>
-                        <p class="font-bold text-sm">In-App Toasts</p>
-                        <p class="text-xs text-gray-500">Show colorful popups in app</p>
+                        <p class="font-bold text-sm">ইন-অ্যাপ টোস্ট</p>
+                        <p class="text-xs text-gray-500">অ্যাপের ভেতরে পপআপ দেখান</p>
                     </div>
                     <label class="relative inline-flex items-center cursor-pointer">
                         <input type="checkbox" id="set-toast" class="sr-only peer" checked onchange="toggleNotifSetting('toast')">
@@ -487,23 +498,23 @@
                 </div>
 
                 <hr class="dark:border-gray-700 my-2">
-                <p class="text-xs font-bold uppercase text-gray-400 tracking-wider mb-2">Triggers</p>
+                <p class="text-xs font-bold uppercase text-gray-400 tracking-wider mb-2">ট্রিগার</p>
 
                 <div class="flex items-center justify-between">
-                    <span class="text-sm"><i class="fas fa-skull text-red-500 w-6"></i> Wickets</span>
+                    <span class="text-sm"><i class="fas fa-skull text-red-500 w-6"></i> উইকেট</span>
                     <input type="checkbox" id="set-wickets" class="w-4 h-4 text-green-600 rounded" checked onchange="toggleNotifSetting('wickets')">
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-sm"><i class="fas fa-star text-yellow-500 w-6"></i> Boundaries (4s/6s)</span>
+                    <span class="text-sm"><i class="fas fa-star text-yellow-500 w-6"></i> বাউন্ডারি (৪/৬)</span>
                     <input type="checkbox" id="set-boundaries" class="w-4 h-4 text-green-600 rounded" checked onchange="toggleNotifSetting('boundaries')">
                 </div>
                 <div class="flex items-center justify-between">
-                    <span class="text-sm"><i class="fas fa-flag text-blue-500 w-6"></i> Extras/Milestones</span>
+                    <span class="text-sm"><i class="fas fa-flag text-blue-500 w-6"></i> এক্সট্রা/মাইলস্টোন</span>
                     <input type="checkbox" id="set-extras" class="w-4 h-4 text-green-600 rounded" onchange="toggleNotifSetting('extras')">
                 </div>
             </div>
             <div class="p-4 bg-gray-50 dark:bg-gray-700/50 text-center">
-                 <button onclick="requestNativePermission()" id="permBtn" class="text-xs text-blue-500 hover:underline">Check Browser Permission</button>
+                 <button onclick="requestNativePermission()" id="permBtn" class="text-xs text-blue-500 hover:underline">ব্রাউজার পারমিশন চেক করুন</button>
             </div>
         </div>
     </div>
@@ -525,28 +536,28 @@
                         <h2 id="profileName" class="text-3xl font-bold text-gray-800 dark:text-white leading-none font-display">Player Name</h2>
                         <span id="profileUniqueId" class="text-xs text-gray-400 font-mono mt-1 block tracking-wider bg-gray-100 dark:bg-gray-700 w-fit px-2 py-0.5 rounded">ID: --</span>
                     </div>
-                    <p class="text-sm text-gray-500 mb-6 font-bold uppercase tracking-wide border-b pb-2">Career Statistics</p>
+                    <p class="text-sm text-gray-500 mb-6 font-bold uppercase tracking-wide border-b pb-2">ক্যারিয়ার পরিসংখ্যান</p>
                     <div class="grid grid-cols-2 gap-4 text-center">
                         <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border dark:border-gray-700 col-span-2 sm:col-span-1 shadow-sm">
-                            <h4 class="text-purple-600 font-bold mb-3 border-b pb-1 flex justify-center items-center text-sm tracking-wider"><i class="fas fa-baseball-bat-ball mr-2"></i> BATTING</h4>
+                            <h4 class="text-purple-600 font-bold mb-3 border-b pb-1 flex justify-center items-center text-sm tracking-wider"><i class="fas fa-baseball-bat-ball mr-2"></i> ব্যাটিং</h4>
                             <div class="grid grid-cols-2 gap-y-3 text-sm">
-                                <div class="text-gray-500 text-left pl-2">Matches</div><div id="profMatches" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">Runs</div><div id="profRuns" class="font-bold text-xl text-right pr-2 text-gray-800 dark:text-white">0</div>
-                                <div class="text-gray-500 text-left pl-2">Balls</div><div id="profBalls" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">Highest</div><div id="profHS" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">SR</div><div id="profSR" class="font-bold text-green-600 text-right pr-2">0.00</div>
-                                <div class="text-gray-500 text-left pl-2">4s / 6s</div><div id="profBoundaries" class="font-bold text-right pr-2">0 / 0</div>
+                                <div class="text-gray-500 text-left pl-2">ম্যাচ</div><div id="profMatches" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">রান</div><div id="profRuns" class="font-bold text-xl text-right pr-2 text-gray-800 dark:text-white">0</div>
+                                <div class="text-gray-500 text-left pl-2">বল</div><div id="profBalls" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">সর্বোচ্চ</div><div id="profHS" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">স্ট্রাইক রেট</div><div id="profSR" class="font-bold text-green-600 text-right pr-2">0.00</div>
+                                <div class="text-gray-500 text-left pl-2">৪/৬</div><div id="profBoundaries" class="font-bold text-right pr-2">0 / 0</div>
                             </div>
                         </div>
                         <div class="bg-gray-50 dark:bg-gray-700/50 p-4 rounded-xl border dark:border-gray-700 col-span-2 sm:col-span-1 shadow-sm">
-                            <h4 class="text-blue-600 font-bold mb-3 border-b pb-1 flex justify-center items-center text-sm tracking-wider"><i class="fas fa-bullseye mr-2"></i> BOWLING</h4>
+                            <h4 class="text-blue-600 font-bold mb-3 border-b pb-1 flex justify-center items-center text-sm tracking-wider"><i class="fas fa-bullseye mr-2"></i> বোলিং</h4>
                             <div class="grid grid-cols-2 gap-y-3 text-sm">
-                                <div class="text-gray-500 text-left pl-2">Innings</div><div id="profBowlInns" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">Wickets</div><div id="profWickets" class="font-bold text-xl text-right pr-2 text-gray-800 dark:text-white">0</div>
-                                <div class="text-gray-500 text-left pl-2">Overs</div><div id="profOvers" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">Runs</div><div id="profRunsConceded" class="font-bold text-right pr-2">0</div>
-                                <div class="text-gray-500 text-left pl-2">Eco</div><div id="profEco" class="font-bold text-red-500 text-right pr-2">0.00</div>
-                                <div class="text-gray-500 text-left pl-2">Best</div><div id="profBestBowl" class="font-bold text-right pr-2">-/-</div>
+                                <div class="text-gray-500 text-left pl-2">ইনিংস</div><div id="profBowlInns" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">উইকেট</div><div id="profWickets" class="font-bold text-xl text-right pr-2 text-gray-800 dark:text-white">0</div>
+                                <div class="text-gray-500 text-left pl-2">ওভার</div><div id="profOvers" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">রান</div><div id="profRunsConceded" class="font-bold text-right pr-2">0</div>
+                                <div class="text-gray-500 text-left pl-2">ইকোনমি</div><div id="profEco" class="font-bold text-red-500 text-right pr-2">0.00</div>
+                                <div class="text-gray-500 text-left pl-2">সেরা</div><div id="profBestBowl" class="font-bold text-right pr-2">-/-</div>
                             </div>
                         </div>
                     </div>
@@ -627,21 +638,21 @@
                 "আজকের আবহাওয়া ক্রিকেটের জন্য একদম আদর্শ। আশা করছি আমরা একটি দুর্দান্ত ম্যাচ উপভোগ করব।"
             ],
             dots: [
-                "বোলার খুব সুন্দর একটি ডেলিভারি দিলেন। ব্যাটসম্যান সতর্কতার সাথে বলটি ডিফেন্ড করলেন। কোনো রান হলো না, খেলার পরিস্থিতি স্থিতিশীল।",
+                "বোলার খুব সুন্দর একটি ডেলিভারি দিলেন। ব্যাটসম্যান সতর্কতার সাথে বলটি ডিফেন্ড করলেন। কোনো রান হলো না।",
                 "অসাধারণ লাইন এবং লেংথ! ব্যাটসম্যান বুঝতেই পারলেন না, বল সোজা ফিল্ডারের হাতে। ডট বল।",
                 "ব্যাটসম্যান ঝুঁকি নিতে চাইলেন না, রক্ষণাত্মক ভঙ্গিতে খেললেন। স্কোরে কোনো পরিবর্তন নেই।"
             ],
             singles: [
-                "ব্যাটসম্যান আলতো করে বলটি গ্যাপে ঠেলে দিয়ে দ্রুত প্রান্ত বদল করলেন। বুদ্ধিদীপ্ত ব্যাটিং, স্কোরবোর্ডে আরও একটি রান যুক্ত হলো।",
+                "ব্যাটসম্যান আলতো করে বলটি গ্যাপে ঠেলে দিয়ে দ্রুত প্রান্ত বদল করলেন। স্কোরবোর্ডে আরও একটি রান যুক্ত হলো।",
                 "সুন্দর প্লেসমেন্ট! মিড-অন অঞ্চল দিয়ে খেলে একটি রান নিলেন। স্ট্রাইক রোটেট করে চাপ কমানোর চেষ্টা।",
                 "রিস্টের দারুণ ব্যবহারে বল লেগ সাইডে ঠেলে দিয়ে এক রান। খেলার গতি সচল রাখছেন ব্যাটসম্যানরা।"
             ],
             twos: [
-                "দ্রুত রানিং বিটুইন দ্য উইকেট! ফিল্ডার বল কুড়িয়ে ফেরত পাঠানোর আগেই ব্যাটসম্যানরা দুটি রান পূর্ণ করলেন। দারুণ বোঝাপড়া!",
+                "দ্রুত রানিং বিটুইন দ্য উইকেট! ফিল্ডার বল কুড়িয়ে ফেরত পাঠানোর আগেই ব্যাটসম্যানরা দুটি রান পূর্ণ করলেন।",
                 "গ্যাপে বল পাঠিয়েই দৌড় শুরু! অনায়াসেই দুটি রান নিলেন, ফিল্ডারের কিছু করার ছিল না।"
             ],
             threes: [
-                "বাউন্ডারি লাইনের খুব কাছে ফিল্ডিং হলো, কিন্তু ততক্ষণে ব্যাটসম্যানরা বিদ্যুৎগতিতে তিনটি রান নিয়ে নিলেন! অসাধারণ ফিটনেস।",
+                "বাউন্ডারি লাইনের খুব কাছে ফিল্ডিং হলো, কিন্তু ততক্ষণে ব্যাটসম্যানরা বিদ্যুৎগতিতে তিনটি রান নিয়ে নিলেন!",
                 "মাঠের বড় অংশ কাজে লাগিয়ে তিনটি রান! ফিল্ডারদের ওপর চাপ সৃষ্টি করলেন ব্যাটসম্যানরা।"
             ],
             fours: [
@@ -661,8 +672,8 @@
                 "এলবিডব্লিউর জোরালো আবেদন... এবং আঙুল তুললেন আম্পায়ার! প্যাভিলিয়নের পথ ধরলেন ব্যাটসম্যান।"
             ],
             extras: {
-                WD: "ওয়াইড বল! বলটি লেগ স্ট্যাম্পের অনেক বাইরে দিয়ে গেল। আম্পায়ার হাত প্রসারিত করলেন, অতিরিক্ত রান।",
-                NB: "ওহ, এটি নো বল! বোলার দাগ অতিক্রম করেছেন। ব্যাটিং দল ফ্রি হিট পাবে, বড় সুযোগ!",
+                WD: "ওয়াইড বল! বলটি লেগ স্ট্যাম্পের অনেক বাইরে দিয়ে গেল। অতিরিক্ত রান।",
+                NB: "ওহ, এটি নো বল! বোলার দাগ অতিক্রম করেছেন। ব্যাটিং দল ফ্রি হিট পাবে!",
                 LB: "লেগ বাই থেকে রান এলো। বল প্যাডে লেগে দিক পরিবর্তন করল।",
                 BY: "কিপার বল ধরতে ব্যর্থ হলেন, বাই রান যুক্ত হলো স্কোরবোর্ডে।"
             },
@@ -687,7 +698,8 @@
                 setTimeout(() => loader.style.display = 'none', 500);
             } catch (error) {
                 console.error("Init Error:", error);
-                loader.innerHTML = `<p class="text-red-500">Failed to connect.<br>${error.message}</p>`;
+                // Replaced alert logic with in-div message for webview safety
+                loader.innerHTML = `<p class="text-red-500 p-4 text-center">সংযোগ বিচ্ছিন্ন হয়েছে।<br>দয়া করে ইন্টারনেট সংযোগ পরীক্ষা করুন।</p>`;
             }
         }
         initApp();
@@ -723,13 +735,13 @@
 
         window.requestNativePermission = async () => {
             if (!("Notification" in window)) {
-                alert("This browser does not support desktop notifications");
+                showToast("দুঃখিত", "এই ব্রাউজার নোটিফিকেশন সমর্থন করে না।");
                 return;
             }
             const permission = await Notification.requestPermission();
             const btn = document.getElementById('permBtn');
             if(permission === 'granted') {
-                btn.innerText = "Permission Granted ✅";
+                btn.innerText = "অনুমতি দেওয়া হয়েছে ✅";
                 btn.classList.add('text-green-600');
                 if(!notifSettings.desktop) {
                     notifSettings.desktop = true;
@@ -737,7 +749,7 @@
                     localStorage.setItem('cricscore_notif_settings', JSON.stringify(notifSettings));
                 }
             } else {
-                btn.innerText = "Permission Denied ❌";
+                btn.innerText = "অনুমতি বাতিল করা হয়েছে ❌";
                 btn.classList.add('text-red-600');
                 notifSettings.desktop = false;
                 document.getElementById('set-desktop').checked = false;
@@ -748,7 +760,6 @@
         function updateNotifIcon() {
             const btn = document.getElementById('notifBtn');
             const icon = btn.querySelector('i');
-            const badge = document.getElementById('notifBadge');
             
             if(notifSettings.desktop || notifSettings.toast) {
                 icon.className = "fas fa-bell text-yellow-500";
@@ -778,8 +789,8 @@
                 <div class="flex items-start">
                     <i class="fas ${icon} text-xl mt-1 mr-3"></i>
                     <div>
-                        <h4 class="font-bold text-sm uppercase tracking-wide">${title}</h4>
-                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-snug">${body}</p>
+                        <h4 class="font-bold text-sm uppercase tracking-wide font-sans">${title}</h4>
+                        <p class="text-sm text-gray-600 dark:text-gray-300 mt-1 leading-snug font-sans">${body}</p>
                     </div>
                 </div>
                 <div class="toast-progress absolute bottom-0 left-0"></div>
@@ -804,9 +815,10 @@
         // --- HYBRID AUDIO ENGINE (NATIVE + GOOGLE TTS FALLBACK) ---
         function loadVoices() {
             const voices = synth.getVoices();
-            preferredVoice = voices.find(v => v.lang.includes('bn')) || 
-                             voices.find(v => v.lang.includes('hi')) || 
-                             voices.find(v => v.lang.startsWith('en'));
+            // Prioritize Bengali voices
+            preferredVoice = voices.find(v => v.lang === 'bn-BD') || 
+                             voices.find(v => v.lang === 'bn-IN') ||
+                             voices.find(v => v.lang.includes('bn'));
         }
         
         function playSound(type) {
@@ -878,12 +890,8 @@
                 currentAudio = null;
             }
 
-            // Determine optimal language code for fallback
-            let langCode = 'bn'; // Default Bengali
-            if(preferredVoice) {
-                if(preferredVoice.lang.includes('hi')) langCode = 'hi';
-                else if(preferredVoice.lang.startsWith('en')) langCode = 'en';
-            }
+            // Forced Bengali Language Code
+            let langCode = 'bn'; 
 
             // 2. Try Native TTS First
             const voices = synth.getVoices();
@@ -891,7 +899,10 @@
 
             if (canUseNative) {
                 const utterance = new SpeechSynthesisUtterance(text);
+                // Explicitly force Bengali lang
+                utterance.lang = 'bn-BD'; 
                 if (preferredVoice) utterance.voice = preferredVoice;
+                
                 utterance.volume = volume;
                 utterance.pitch = pitch;
                 utterance.rate = 1.0;
@@ -918,8 +929,7 @@
                 try {
                     synth.speak(utterance);
                     
-                    // 3. Fallback Timeout Logic: If native doesn't start in 800ms, use Google TTS
-                    // This fixes the "WebView Silence" issue where speak() is called but nothing happens
+                    // 3. Fallback Timeout Logic
                     setTimeout(() => {
                         if(!nativeStarted && synth.speaking) {
                             console.warn("Native TTS timeout (WebView issue?), switching to Google TTS");
@@ -976,47 +986,47 @@
 
             if (ball.isWicket) {
                 if(notifSettings.wickets) {
-                    notifTitle = "WICKET!";
+                    notifTitle = "উইকেট!";
                     notifBody = `${ball.strikerName} (${ball.wicketType})`;
                     notifType = "wicket";
                     
                     showOverlay = true; 
-                    bigText.innerText = "OUT!"; subText.innerText = notifBody;
+                    bigText.innerText = "আউট!"; subText.innerText = notifBody;
                     overlay.classList.add('type-wicket'); playSound('wicket');
                 }
             } 
             else if (ball.runs === 4) {
                 if(notifSettings.boundaries) {
-                    notifTitle = "FOUR!";
-                    notifBody = `${ball.strikerName} hits a boundary!`;
+                    notifTitle = "চার!";
+                    notifBody = `${ball.strikerName} বাউন্ডারি হাঁকিয়েছেন!`;
                     notifType = "four";
 
                     showOverlay = true; 
-                    bigText.innerText = "4"; subText.innerText = "SUPER SHOT!";
+                    bigText.innerText = "৪"; subText.innerText = "দারুণ শট!";
                     overlay.classList.add('type-4', 'stadium-bg'); playSound('four');
                 }
             } 
             else if (ball.runs === 6) {
                 if(notifSettings.boundaries) {
-                    notifTitle = "SIX!";
-                    notifBody = `HUGE SIX by ${ball.strikerName}!`;
+                    notifTitle = "ছক্কা!";
+                    notifBody = `${ball.strikerName} বিশাল ছক্কা মেরেছেন!`;
                     notifType = "six";
 
                     showOverlay = true; 
-                    bigText.innerText = "6"; subText.innerText = "MAXIMUM!";
+                    bigText.innerText = "৬"; subText.innerText = "বিশাল ছক্কা!";
                     overlay.classList.add('type-6', 'stadium-bg'); playSound('six');
                 }
             }
             else if (ball.extrasType && notifSettings.extras) {
                 if (ball.extrasType === 'WD') {
-                    showOverlay = true; bigText.innerText = "WD"; subText.innerText = "WIDE BALL";
+                    showOverlay = true; bigText.innerText = "WD"; subText.innerText = "ওয়াইড বল";
                     overlay.classList.add('type-extra'); playSound('wide');
-                    notifTitle = "Extra"; notifBody = "Wide Ball";
+                    notifTitle = "এক্সট্রা"; notifBody = "ওয়াইড বল";
                 }
                 else if (ball.extrasType === 'NB') {
-                    showOverlay = true; bigText.innerText = "NB"; subText.innerText = "NO BALL";
+                    showOverlay = true; bigText.innerText = "NB"; subText.innerText = "নো বল";
                     overlay.classList.add('type-extra'); playSound('noball');
-                    notifTitle = "Extra"; notifBody = "No Ball";
+                    notifTitle = "এক্সট্রা"; notifBody = "নো বল";
                 }
             }
 
@@ -1194,15 +1204,15 @@
 
             // 2. Partnership Chart
             const p = state.partnership;
-            const p1Name = state.batsmen[p.p1Id]?.name || "Batsman 1";
-            const p2Name = state.batsmen[p.p2Id]?.name || "Batsman 2";
-            document.getElementById('partnerText').innerText = `${p.runs} runs (${p.balls} balls)`;
+            const p1Name = state.batsmen[p.p1Id]?.name || "ব্যাটসম্যান ১";
+            const p2Name = state.batsmen[p.p2Id]?.name || "ব্যাটসম্যান ২";
+            document.getElementById('partnerText').innerText = `${p.runs} রান (${p.balls} বল)`;
 
             if(partnerChartInstance) partnerChartInstance.destroy();
             partnerChartInstance = new Chart(ctxPartner, {
                 type: 'doughnut',
                 data: {
-                    labels: [p1Name, p2Name, 'Extras'],
+                    labels: [p1Name, p2Name, 'এক্সট্রা'],
                     datasets: [{
                         data: [p.p1Runs, p.p2Runs, p.extras],
                         backgroundColor: ['#3b82f6', '#10b981', '#9ca3af'], borderWidth: 0
@@ -1349,24 +1359,24 @@
             let timeDisplay = "";
             if (isLive && match.createdAt) {
                 const startMs = match.createdAt.toDate ? match.createdAt.toDate().getTime() : Date.now();
-                timeDisplay = `<div class="text-xs text-green-600 font-mono mt-2 flex items-center justify-center bg-green-50 dark:bg-green-900/20 py-1 rounded"><i class="fas fa-clock mr-1"></i>Running: <span class="live-match-timer font-bold" data-start="${startMs}">00:00:00</span></div>`;
+                timeDisplay = `<div class="text-xs text-green-600 font-mono mt-2 flex items-center justify-center bg-green-50 dark:bg-green-900/20 py-1 rounded"><i class="fas fa-clock mr-1"></i>চলছে: <span class="live-match-timer font-bold" data-start="${startMs}">00:00:00</span></div>`;
             } else if (match.status === 'completed' && match.createdAt && match.endedAt) {
                 const start = match.createdAt.toDate ? match.createdAt.toDate() : new Date(match.createdAt);
                 const end = match.endedAt.toDate ? match.endedAt.toDate() : new Date(match.endedAt);
                 const diff = end - start;
-                timeDisplay = `<div class="text-xs text-gray-500 font-mono mt-2 flex items-center justify-center bg-gray-50 dark:bg-gray-700/30 py-1 rounded"><i class="fas fa-history mr-1"></i>Duration: ${formatDuration(diff)}</div>`;
+                timeDisplay = `<div class="text-xs text-gray-500 font-mono mt-2 flex items-center justify-center bg-gray-50 dark:bg-gray-700/30 py-1 rounded"><i class="fas fa-history mr-1"></i>সময়কাল: ${formatDuration(diff)}</div>`;
             }
 
             return `
                 <div class="relative bg-white dark:bg-gray-800 rounded-lg shadow-md hover:shadow-xl transition overflow-hidden border-l-4 ${isLive ? 'border-red-500' : 'border-gray-300'} group">
                     <div class="p-4 cursor-pointer" onclick="openMatch('${match.id}')">
                         <div class="flex justify-between items-center mb-2">
-                            <span class="text-xs font-bold uppercase text-gray-400 font-display tracking-wider">${match.tournamentName || 'Friendly'}</span>
+                            <span class="text-xs font-bold uppercase text-gray-400 font-display tracking-wider">${match.tournamentName || 'বন্ধুত্বপূর্ণ'}</span>
                             ${isLive ? '<span class="text-xs bg-red-100 text-red-600 px-2 py-0.5 rounded-full font-bold animate-pulse">LIVE</span>' : ''}
                         </div>
                         <div class="flex justify-between items-center">
                             <div><h3 class="font-bold text-lg font-display text-gray-800 dark:text-gray-100">${match.teamAName}</h3><p class="text-gray-600 dark:text-gray-400 text-sm font-bold">${match.score?.teamA || '0/0'}</p></div>
-                            <span class="text-gray-300 font-bold text-xl">VS</span>
+                            <span class="text-gray-300 font-bold text-xl">বনাম</span>
                             <div class="text-right"><h3 class="font-bold text-lg font-display text-gray-800 dark:text-gray-100">${match.teamBName}</h3><p class="text-gray-600 dark:text-gray-400 text-sm font-bold">${match.score?.teamB || '0/0'}</p></div>
                         </div>
                         ${timeDisplay}
@@ -1384,11 +1394,11 @@
             matchesListUnsubscribe = onSnapshot(q, (snapshot) => {
                 if(matchTimerInterval) clearInterval(matchTimerInterval);
                 list.innerHTML = '';
-                if(snapshot.empty) { list.innerHTML = '<div class="col-span-full text-center py-10"><i class="fas fa-baseball-bat-ball text-4xl text-gray-300 mb-3"></i><p class="text-gray-500">No active matches found.</p></div>'; return; }
+                if(snapshot.empty) { list.innerHTML = '<div class="col-span-full text-center py-10"><i class="fas fa-baseball-bat-ball text-4xl text-gray-300 mb-3"></i><p class="text-gray-500">কোনো ম্যাচ পাওয়া যায়নি।</p></div>'; return; }
                 const grouped = {};
                 snapshot.forEach(doc => {
                     const m = {id: doc.id, ...doc.data()};
-                    const d = m.createdAt ? (m.createdAt.toDate ? m.createdAt.toDate() : new Date(m.createdAt)).toLocaleDateString('en-US', { weekday: 'long', month: 'short', day: 'numeric' }) : "Unknown";
+                    const d = m.createdAt ? (m.createdAt.toDate ? m.createdAt.toDate() : new Date(m.createdAt)).toLocaleDateString('bn-BD', { weekday: 'long', month: 'short', day: 'numeric' }) : "Unknown";
                     if(!grouped[d]) grouped[d] = []; grouped[d].push(m);
                 });
                 Object.keys(grouped).forEach(d => {
@@ -1426,7 +1436,7 @@
                     currentMatchState = calculateMatchState(freshData); 
                     currentMatchData = freshData;
                     renderScoreboard(freshData, currentMatchState);
-                } else { alert("Match unavailable"); switchView('live'); }
+                } else { showToast("ত্রুটি", "ম্যাচটি পাওয়া যায়নি"); switchView('live'); }
             });
         };
 
@@ -1448,14 +1458,14 @@
             const inn = state.currentInnings; const innData = state.innings[inn];
             document.getElementById('teamAName').innerText = match.teamAName; document.getElementById('teamBName').innerText = match.teamBName;
             document.getElementById('live-tab-teamA').innerText = match.teamAName; document.getElementById('live-tab-teamB').innerText = match.teamBName;
-            document.getElementById('matchTournamentName').innerText = (match.type || 'Match') + ' • ' + (match.tournamentName || 'Friendly');
-            document.getElementById('matchHostName').innerText = match.createdByName ? `Hosted by ${match.createdByName}` : '';
-            document.getElementById('matchResult').innerText = match.result || (match.status === 'live' ? 'Match In Progress' : 'Match Completed');
+            document.getElementById('matchTournamentName').innerText = (match.type || 'ম্যাচ') + ' • ' + (match.tournamentName || 'বন্ধুত্বপূর্ণ');
+            document.getElementById('matchHostName').innerText = match.createdByName ? `আয়োজক: ${match.createdByName}` : '';
+            document.getElementById('matchResult').innerText = match.result || (match.status === 'live' ? 'খেলা চলছে' : 'খেলা শেষ');
             
             document.getElementById('teamAScore').innerText = `${state.innings[1].runs}/${state.innings[1].wickets}`; document.getElementById('teamAOvers').innerText = `(${state.innings[1].displayOvers})`;
             if (match.currentInnings === 2 || match.status === 'completed') {
                 document.getElementById('teamBScore').innerText = `${state.innings[2].runs}/${state.innings[2].wickets}`; document.getElementById('teamBOvers').innerText = `(${state.innings[2].displayOvers})`;
-            } else { document.getElementById('teamBScore').innerText = "Yet to Bat"; document.getElementById('teamBOvers').innerText = ""; }
+            } else { document.getElementById('teamBScore').innerText = "ব্যাট করেনি"; document.getElementById('teamBOvers').innerText = ""; }
 
             renderLiveFullScorecard(match, state);
             updateWinProbability(match, state);
@@ -1475,14 +1485,14 @@
             });
             
             const crr = (innData.runs / (Math.max(1, innData.overs * 6 + innData.balls)/6)).toFixed(2);
-            document.getElementById('matchCRR').innerText = `CRR: ${crr}`;
+            document.getElementById('matchCRR').innerText = `রান রেট: ${crr}`;
 
             if (inn === 2 || match.status === 'completed') {
                 const target = state.innings[1].runs + 1;
-                document.getElementById('matchTargetDisplay').innerText = `Target: ${target}`; document.getElementById('matchTargetDisplay').classList.remove('hidden');
+                document.getElementById('matchTargetDisplay').innerText = `লক্ষ্য: ${target}`; document.getElementById('matchTargetDisplay').classList.remove('hidden');
                 if (match.status === 'live') {
                     const runsNeed = Math.max(0, target - state.innings[2].runs); const ballsRem = (match.oversLimit * 6) - (state.innings[2].overs * 6 + state.innings[2].balls);
-                    document.getElementById('matchEquation').innerText = `Need ${runsNeed} runs in ${ballsRem} balls`; document.getElementById('matchEquation').classList.remove('hidden');
+                    document.getElementById('matchEquation').innerText = `${ballsRem} বলে ${runsNeed} রান প্রয়োজন`; document.getElementById('matchEquation').classList.remove('hidden');
                 } else { document.getElementById('matchEquation').classList.add('hidden'); }
             } else { document.getElementById('matchTargetDisplay').classList.add('hidden'); document.getElementById('matchEquation').classList.add('hidden'); }
             
@@ -1496,8 +1506,8 @@
         function renderLiveFullScorecard(match, state) {
             const renderSquadTable = (squad, elementId) => {
                 const container = document.getElementById(elementId);
-                if(!squad) { container.innerHTML = '<p class="p-4 text-center text-gray-500">Squad not available</p>'; return; }
-                let batHtml = `<div class="mb-4"><h5 class="bg-gray-50 dark:bg-gray-700/50 p-2 text-xs font-bold uppercase text-gray-500 tracking-wider">Batting</h5><table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b dark:border-gray-700"><tr><th class="text-left py-2 px-3">Batter</th><th class="text-right py-2 px-2">R</th><th class="text-right py-2 px-2">B</th><th class="text-right py-2 px-1">4s</th><th class="text-right py-2 px-1">6s</th><th class="text-right py-2 px-2">SR</th></tr></thead><tbody>`;
+                if(!squad) { container.innerHTML = '<p class="p-4 text-center text-gray-500">দলের তথ্য নেই</p>'; return; }
+                let batHtml = `<div class="mb-4"><h5 class="bg-gray-50 dark:bg-gray-700/50 p-2 text-xs font-bold uppercase text-gray-500 tracking-wider">ব্যাটিং</h5><table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b dark:border-gray-700"><tr><th class="text-left py-2 px-3">ব্যাটার</th><th class="text-right py-2 px-2">রান</th><th class="text-right py-2 px-2">বল</th><th class="text-right py-2 px-1">৪</th><th class="text-right py-2 px-1">৬</th><th class="text-right py-2 px-2">এস.আর</th></tr></thead><tbody>`;
                 const activeStriker = match.currentStrikerId; const activeNonStriker = match.currentNonStrikerId;
                 squad.forEach(p => {
                     const stats = state.batsmen[p.id]; let rowClass = "border-b dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700/30 transition"; let nameDisplay = p.name; let runs="-", balls="-", fours="-", sixes="-", sr="-", status="";
@@ -1511,7 +1521,7 @@
                     }
                 });
                 batHtml += `</tbody></table></div>`;
-                let bowlHtml = `<div class="mb-2"><h5 class="bg-gray-50 dark:bg-gray-700/50 p-2 text-xs font-bold uppercase text-gray-500 tracking-wider">Bowling</h5><table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b dark:border-gray-700"><tr><th class="text-left py-2 px-3">Bowler</th><th class="text-right py-2 px-2">O</th><th class="text-right py-2 px-2">M</th><th class="text-right py-2 px-2">R</th><th class="text-right py-2 px-2">W</th><th class="text-right py-2 px-2">Eco</th></tr></thead><tbody>`;
+                let bowlHtml = `<div class="mb-2"><h5 class="bg-gray-50 dark:bg-gray-700/50 p-2 text-xs font-bold uppercase text-gray-500 tracking-wider">বোলিং</h5><table class="w-full text-sm"><thead class="text-xs text-gray-400 border-b dark:border-gray-700"><tr><th class="text-left py-2 px-3">বোলার</th><th class="text-right py-2 px-2">ওভার</th><th class="text-right py-2 px-2">মেডেন</th><th class="text-right py-2 px-2">রান</th><th class="text-right py-2 px-2">উইকেট</th><th class="text-right py-2 px-2">ইকো</th></tr></thead><tbody>`;
                 let bowlerFound = false;
                 squad.forEach(p => {
                     const stats = state.bowlers[p.id];
@@ -1520,24 +1530,24 @@
                         bowlHtml += `<tr class="border-b dark:border-gray-700 ${isCurrent ? 'bg-blue-50 dark:bg-blue-900/10' : ''}"><td class="text-left py-2 px-3 ${isCurrent ? 'font-bold text-blue-700 dark:text-blue-300' : ''}">${p.name} ${isCurrent ? '<span class="text-[10px] ml-1">●</span>' : ''}</td><td class="text-right px-2">${overs}</td><td class="text-right px-2 text-gray-400">${stats.maidens}</td><td class="text-right px-2">${stats.runs}</td><td class="text-right px-2 font-bold text-red-600">${stats.wickets}</td><td class="text-right px-2 text-xs text-gray-500">${eco}</td></tr>`;
                     }
                 });
-                if(!bowlerFound) bowlHtml += `<tr><td colspan="6" class="text-center py-2 text-gray-400 text-xs">No active bowlers</td></tr>`; bowlHtml += `</tbody></table></div>`;
+                if(!bowlerFound) bowlHtml += `<tr><td colspan="6" class="text-center py-2 text-gray-400 text-xs">বোলার নেই</td></tr>`; bowlHtml += `</tbody></table></div>`;
                 container.innerHTML = batHtml + bowlHtml;
             };
             renderSquadTable(match.squadA, 'live-content-teamA'); renderSquadTable(match.squadB, 'live-content-teamB');
         }
 
         window.loadAllPlayers = async () => {
-            const list = document.getElementById('playersListContainer'); list.innerHTML = '<div class="col-span-full text-center"><i class="fas fa-spinner fa-spin text-2xl"></i> Loading stats...</div>';
+            const list = document.getElementById('playersListContainer'); list.innerHTML = '<div class="col-span-full text-center"><i class="fas fa-spinner fa-spin text-2xl"></i> তথ্য লোড হচ্ছে...</div>';
             try {
                 const q = query(collection(db, getCollPath('players')), orderBy('totalRuns', 'desc')); const querySnapshot = await getDocs(q); list.innerHTML = '';
-                if(querySnapshot.empty) { list.innerHTML = '<div class="col-span-full text-center text-gray-500">No player statistics available.</div>'; return; }
+                if(querySnapshot.empty) { list.innerHTML = '<div class="col-span-full text-center text-gray-500">কোনো খেলোয়াড়ের তথ্য নেই।</div>'; return; }
                 window.allPlayersData = {};
                 querySnapshot.forEach((doc) => {
                     const p = doc.data(); window.allPlayersData[doc.id] = p;
                     const avatarHtml = p.imageUrl ? `<img src="${p.imageUrl}" class="w-12 h-12 rounded-full object-cover border-2 border-purple-500 bg-white">` : `<div class="w-12 h-12 rounded-full bg-gray-200 dark:bg-gray-700 flex items-center justify-center font-bold text-lg text-purple-600">${p.name.charAt(0).toUpperCase()}</div>`;
                     list.innerHTML += `<div class="bg-white dark:bg-gray-800 p-4 rounded-lg shadow hover:shadow-lg transition cursor-pointer border-t-4 border-purple-500 player-card" onclick="openPlayerProfile('${doc.id}')"><div class="flex items-center space-x-4">${avatarHtml}<div><h3 class="font-bold text-lg leading-tight player-name font-display">${p.name}</h3><div class="text-xs text-gray-500 mt-1 space-x-2"><span class="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded"><i class="fas fa-baseball-bat-ball text-gray-400 mr-1"></i>${p.totalRuns || 0}</span><span class="bg-gray-100 dark:bg-gray-700 px-2 py-0.5 rounded"><i class="fas fa-bullseye text-gray-400 mr-1"></i>${p.totalWickets || 0}</span></div></div></div></div>`;
                 });
-            } catch(e) { list.innerHTML = '<p class="text-red-500 text-center col-span-full">Unable to load player data.</p>'; }
+            } catch(e) { list.innerHTML = '<p class="text-red-500 text-center col-span-full">তথ্য লোড করতে সমস্যা হচ্ছে।</p>'; }
         };
 
         window.filterPlayers = () => {
