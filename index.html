@@ -30,7 +30,7 @@
                     fontFamily: {
                         sans: ['Inter', 'sans-serif'],
                         display: ['Oswald', 'sans-serif'],
-                        bengali: ['Hind Siliguri', 'sans-serif'], // Added for Bengali text
+                        bengali: ['Hind Siliguri', 'sans-serif'],
                     },
                     colors: {
                         app: {
@@ -217,7 +217,7 @@
                 </span>
             </div>
             
-            <div id="matchesList" class="space-y-4 pb-20">
+            <div id="matchesList" class="space-y-6 pb-20">
                 <!-- Loading Skeleton -->
                 <div class="glass-card rounded-2xl p-4 animate-pulse">
                     <div class="h-4 bg-gray-200 dark:bg-gray-700 rounded w-1/4 mb-4"></div>
@@ -549,6 +549,24 @@
         };
 
         // --- MATCHES LIST LOGIC ---
+        function formatDateHeader(timestamp) {
+            if (!timestamp) return 'Upcoming';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            const today = new Date();
+            const yesterday = new Date();
+            yesterday.setDate(today.getDate() - 1);
+            
+            if (date.toDateString() === today.toDateString()) return 'Today';
+            if (date.toDateString() === yesterday.toDateString()) return 'Yesterday';
+            return date.toLocaleDateString('en-US', { day: 'numeric', month: 'short', year: 'numeric' });
+        }
+
+        function formatTime(timestamp) {
+            if (!timestamp) return '';
+            const date = timestamp.toDate ? timestamp.toDate() : new Date(timestamp);
+            return date.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+        }
+
         function loadMatches() {
             if (matchesListUnsubscribe) matchesListUnsubscribe();
             const list = document.getElementById('matchesList');
@@ -567,8 +585,20 @@
                     return;
                 }
 
+                let lastDateGroup = '';
+
                 snapshot.forEach(doc => {
                     const m = {id: doc.id, ...doc.data()};
+                    const dateGroup = formatDateHeader(m.createdAt || Date.now());
+
+                    if (dateGroup !== lastDateGroup) {
+                        list.innerHTML += `<div class="text-xs font-bold text-gray-400 uppercase tracking-widest mt-6 mb-3 ml-1 border-b border-gray-100 dark:border-gray-700 pb-1 flex justify-between items-center">
+                            <span>${dateGroup}</span>
+                            <span class="text-[10px] font-normal opacity-50"><i class="far fa-calendar-alt"></i></span>
+                        </div>`;
+                        lastDateGroup = dateGroup;
+                    }
+
                     list.innerHTML += renderMatchCard(m);
                 });
             });
@@ -576,34 +606,108 @@
 
         function renderMatchCard(match) {
             const isLive = match.status === 'live';
-            const statusColor = isLive ? 'text-red-500' : 'text-gray-400';
-            const statusText = isLive ? 'LIVE' : (match.result || 'Finished');
-            const borderClass = isLive ? 'border-l-4 border-l-red-500' : '';
+            const isFinished = !!match.result || match.status === 'completed';
+            
+            // --- FIX: CALCULATE DYNAMIC STATE FOR CARD ---
+            // Instead of relying on possibly stale match.score/match.overs, we calculate it fresh
+            const state = calculateMatchState(match); 
+            const i1 = state.innings[1];
+            const i2 = state.innings[2];
+            
+            const scoreA = `${i1.runs}/${i1.wickets}`;
+            const oversA = `${i1.overs}.${i1.balls}`;
+            const scoreB = `${i2.runs}/${i2.wickets}`;
+            const oversB = `${i2.overs}.${i2.balls}`;
+
+            // Status Badge Logic
+            let statusBadge = '';
+            let timeBadge = '';
+
+            if (isLive) {
+                statusBadge = `<span class="text-[10px] font-bold text-white bg-red-500 px-2.5 py-1 rounded-full flex items-center gap-1 shadow-sm">
+                    <span class="w-1.5 h-1.5 rounded-full bg-white animate-pulse"></span> LIVE
+                </span>`;
+            } else if (isFinished) {
+                statusBadge = `<span class="text-[10px] font-bold text-gray-500 bg-gray-200 dark:bg-gray-700 px-2.5 py-1 rounded-full">
+                    FINISHED
+                </span>`;
+            } else {
+                const timeStr = formatTime(match.createdAt || Date.now());
+                timeBadge = `<span class="ml-2 text-[10px] font-bold text-gray-500 dark:text-gray-400"><i class="far fa-clock mr-1"></i>${timeStr}</span>`;
+            }
+
+            // Footer / Result Logic
+            let footerContent = '';
+            if (isLive) {
+                footerContent = `<span class="text-green-600 dark:text-green-400 font-bold animate-pulse"><i class="fas fa-circle text-[8px] mr-1"></i> খেলা চলছে - দেখতে ট্যাপ করুন</span>`;
+            } else if (match.result) {
+                footerContent = `<span class="text-indigo-600 dark:text-indigo-400 font-bold bg-indigo-50 dark:bg-indigo-900/30 px-3 py-1 rounded-lg w-full text-center block">${match.result}</span>`;
+            } else {
+                footerContent = `<span>ফলাফল শীঘ্রই আসছে</span>`;
+            }
+
+            // Team Initials
+            const teamAInitial = match.teamAName ? match.teamAName.charAt(0) : 'A';
+            const teamBInitial = match.teamBName ? match.teamBName.charAt(0) : 'B';
 
             return `
-                <div class="glass-card rounded-xl p-5 mb-4 relative overflow-hidden group transition-all duration-300 hover:-translate-y-1 ${borderClass}" onclick="openMatch('${match.id}')">
-                    <div class="flex justify-between items-start mb-3">
-                        <span class="text-[10px] font-bold uppercase tracking-wider text-gray-400 font-display">${match.tournamentName || 'Friendly Match'}</span>
-                        <span class="text-[10px] font-bold ${statusColor} bg-gray-100 dark:bg-gray-700/50 px-2 py-0.5 rounded-full flex items-center gap-1">
-                            ${isLive ? '<span class="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></span>' : ''} ${statusText}
-                        </span>
-                    </div>
+                <div class="group relative bg-white dark:bg-gray-800 rounded-3xl p-0 overflow-hidden shadow-lg border border-gray-100 dark:border-gray-700 transition-all duration-300 hover:shadow-xl hover:-translate-y-1 cursor-pointer" onclick="openMatch('${match.id}')">
+                    <!-- Live Pulse Background (if live) -->
+                    ${isLive ? '<div class="absolute top-0 right-0 w-32 h-32 bg-red-500/10 rounded-full blur-3xl -mr-16 -mt-16 animate-pulse pointer-events-none"></div>' : ''}
                     
-                    <div class="flex items-center justify-between">
-                        <div class="flex-1">
-                            <h3 class="font-bold text-gray-800 dark:text-gray-100 text-lg leading-tight font-display">${match.teamAName}</h3>
-                            <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">${match.score?.teamA || '0/0'}</p>
+                    <!-- Header -->
+                    <div class="px-5 pt-4 flex justify-between items-center relative z-10">
+                        <div class="flex items-center">
+                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-400 bg-gray-100 dark:bg-gray-700/50 px-2 py-1 rounded-md">${match.tournamentName || 'Friendly Match'}</span>
+                            ${timeBadge}
                         </div>
-                        <div class="mx-4 text-xs font-bold text-gray-300">VS</div>
-                        <div class="flex-1 text-right">
-                            <h3 class="font-bold text-gray-800 dark:text-gray-100 text-lg leading-tight font-display">${match.teamBName}</h3>
-                            <p class="text-gray-500 dark:text-gray-400 text-sm font-medium mt-1">${match.score?.teamB || '0/0'}</p>
-                        </div>
+                        ${statusBadge}
                     </div>
 
-                    ${isLive ? `<div class="mt-3 pt-3 border-t border-gray-100 dark:border-gray-700/50 text-center text-xs text-green-600 dark:text-green-400 font-medium flex items-center justify-center gap-1">
-                        <i class="fas fa-circle text-[6px]"></i> Tap to watch live
-                    </div>` : ''}
+                    <!-- Teams & Scores -->
+                    <div class="px-5 py-5 flex items-center justify-between relative z-10">
+                         <!-- Team A -->
+                         <div class="flex flex-col items-start w-[40%]">
+                             <div class="flex items-center gap-2 mb-2">
+                                 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-emerald-400 to-green-600 flex items-center justify-center text-white font-bold text-xs shadow-md shrink-0">
+                                    ${teamAInitial}
+                                 </div>
+                                 <h3 class="font-bold text-gray-800 dark:text-gray-100 text-sm leading-tight truncate w-full font-display">${match.teamAName}</h3>
+                             </div>
+                             <div class="pl-0">
+                                 <p class="text-2xl font-bold font-display text-gray-900 dark:text-white tracking-tight whitespace-nowrap">${scoreA}</p>
+                                 <p class="text-xs font-medium text-gray-500 mt-1.5 whitespace-nowrap pl-1">${oversA} ov</p>
+                             </div>
+                         </div>
+
+                         <!-- VS / Status Middle -->
+                         <div class="flex flex-col items-center justify-center w-[20%]">
+                             <div class="w-8 h-8 rounded-full bg-gray-100 dark:bg-gray-700 flex items-center justify-center text-[10px] font-bold text-gray-400 border-2 border-white dark:border-gray-600 shadow-sm z-10">
+                                VS
+                             </div>
+                         </div>
+
+                         <!-- Team B -->
+                         <div class="flex flex-col items-end w-[40%]">
+                             <div class="flex items-center gap-2 mb-2 flex-row-reverse">
+                                 <div class="w-8 h-8 rounded-full bg-gradient-to-br from-indigo-400 to-blue-600 flex items-center justify-center text-white font-bold text-xs shadow-md shrink-0">
+                                    ${teamBInitial}
+                                 </div>
+                                 <h3 class="font-bold text-gray-800 dark:text-gray-100 text-sm leading-tight truncate w-full text-right font-display">${match.teamBName}</h3>
+                             </div>
+                             <div class="pr-0 text-right">
+                                 <p class="text-2xl font-bold font-display text-gray-900 dark:text-white tracking-tight whitespace-nowrap">${scoreB}</p>
+                                 <p class="text-xs font-medium text-gray-500 mt-1.5 whitespace-nowrap pr-1">${oversB} ov</p>
+                             </div>
+                         </div>
+                    </div>
+
+                    <!-- Footer / Result -->
+                    <div class="bg-gray-50 dark:bg-gray-700/30 px-5 py-3 border-t border-gray-100 dark:border-gray-700 flex items-center justify-center">
+                         <div class="text-xs font-medium text-gray-500 dark:text-gray-400 w-full text-center">
+                            ${footerContent}
+                         </div>
+                    </div>
                 </div>
             `;
         }
@@ -660,7 +764,11 @@
                 totalLegalBalls: 0
             };
 
-            const history = matchData.history || [];
+            // FIX: Sort history by ID/Time to ensure correct order of calculation
+            // This prevents "jumbled" overs if the DB returns unsorted array
+            let history = matchData.history || [];
+            history = history.slice().sort((a, b) => (a.id || 0) - (b.id || 0));
+
             let lastWicketScore = 0;
             let lastWicketBalls = 0;
             let currentOverRuns = 0;
@@ -728,7 +836,7 @@
                     lastWicketBalls = state.totalLegalBalls;
                 }
 
-                // Push for timeline
+                // Push for timeline (Reverse chronological for display)
                 ball.overStr = `${s.overs}.${s.balls}`;
                 state.timeline.unshift(ball);
 
@@ -744,8 +852,9 @@
             state.currentPartnership.balls = state.totalLegalBalls - lastWicketBalls;
             if(state.currentPartnership.runs < 0) state.currentPartnership.runs = 0; // safety
 
-            // Check for new event trigger
-            if(history.length > 0) {
+            // Check for new event trigger (Only inside match detail view logic usually, but harmless here)
+            // Note: renderMatchCard calls this too, but lastProcessedBallId logic prevents double events
+            if(history.length > 0 && currentMatchId === matchData.id) {
                 const lastBall = history[history.length - 1];
                 if(lastBall.id > lastProcessedBallId) {
                     lastProcessedBallId = lastBall.id;
