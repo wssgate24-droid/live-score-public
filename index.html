@@ -1176,6 +1176,16 @@
             });
             html += `</tbody></table>`;
             
+            // --- NEW: Yet to Bat Section ---
+            let yetToBatList = squad.filter(p => !state.batsmen[p.id] && p.id !== match.currentStrikerId && p.id !== match.currentNonStrikerId);
+            if(yetToBatList.length > 0) {
+                 const names = yetToBatList.map(p => p.name).join(', ');
+                 html += `<div class="mt-3 px-3 py-2 bg-gray-50 dark:bg-gray-700/20 rounded-lg text-xs border border-gray-100 dark:border-gray-700/30">
+                    <span class="font-bold text-gray-500 dark:text-gray-400 uppercase tracking-wide">ব্যাট করেননি:</span> 
+                    <span class="text-gray-600 dark:text-gray-300 ml-1 leading-relaxed">${names}</span>
+                </div>`;
+            }
+
             html += `<h5 class="mt-4 mb-2 text-xs font-bold text-gray-400 uppercase">বোলার</h5>
             <table class="w-full text-sm border-collapse">
                 <thead><tr class="text-gray-400 text-xs border-b border-gray-200 dark:border-gray-700"><th class="text-left py-2 font-medium">বোলার</th><th class="text-right py-2 font-medium">O</th><th class="text-right py-2 font-medium">M</th><th class="text-right py-2 font-medium">R</th><th class="text-right py-2 font-medium">W</th><th class="text-right py-2 font-medium">Eco</th></tr></thead>
