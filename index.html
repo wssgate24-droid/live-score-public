@@ -478,6 +478,7 @@
         let wormChartInstance = null;
         let barChartInstance = null;
         let lastProcessedBallId = 0;
+        let isViewJustOpened = false; // Flag to prevent sound on initial load
 
         const getCollPath = (name) => `artifacts/${appId}/public/data/${name}`;
 
@@ -512,6 +513,15 @@
         };
 
         window.switchView = (viewName) => {
+            // Cleanup when leaving match detail
+            if(viewName !== 'matchDetail') {
+                currentMatchId = null;
+                if(currentMatchUnsubscribe) {
+                    currentMatchUnsubscribe();
+                    currentMatchUnsubscribe = null;
+                }
+            }
+
             // Hide all views
             document.querySelectorAll('.view-section').forEach(el => el.classList.add('hidden'));
             // Show target
@@ -716,6 +726,8 @@
         window.openMatch = (matchId) => {
             currentMatchId = matchId; 
             lastProcessedBallId = 0;
+            isViewJustOpened = true; // Set flag to suppress initial load effects
+
             switchView('matchDetail');
             
             // --- Reset UI ---
@@ -750,13 +762,19 @@
                     const data = docSnap.data();
                     currentMatchState = calculateMatchState(data);
                     updateUI(data, currentMatchState);
+                    
+                    // After the first render, disable the initial load flag
+                    if (isViewJustOpened) isViewJustOpened = false;
                 }
             });
         };
 
         function calculateMatchState(matchData) {
             const state = {
-                innings: { 1: { runs: 0, wickets: 0, overs: 0, balls: 0, history: [], runPerOver: [] }, 2: { runs: 0, wickets: 0, overs: 0, balls: 0, history: [], runPerOver: [] } },
+                innings: { 
+                    1: { runs: 0, wickets: 0, overs: 0, balls: 0, history: [{over:0, runs:0}], wicketsData: [], runPerOver: [] }, 
+                    2: { runs: 0, wickets: 0, overs: 0, balls: 0, history: [{over:0, runs:0}], wicketsData: [], runPerOver: [] } 
+                },
                 currentInnings: matchData.currentInnings || 1,
                 batsmen: {}, bowlers: {}, 
                 timeline: [],
@@ -831,6 +849,10 @@
                     if(state.batsmen[ball.wicketVictimId || ball.strikerId]) {
                         state.batsmen[ball.wicketVictimId || ball.strikerId].out = ball.wicketType;
                     }
+                    
+                    // Capture Wicket Data for Chart
+                    s.wicketsData.push({ x: s.overs + (s.balls/6), y: s.runs });
+
                     // Reset partnership tracking on wicket
                     lastWicketScore = s.runs;
                     lastWicketBalls = state.totalLegalBalls;
@@ -856,7 +878,11 @@
             // Note: renderMatchCard calls this too, but lastProcessedBallId logic prevents double events
             if(history.length > 0 && currentMatchId === matchData.id) {
                 const lastBall = history[history.length - 1];
-                if(lastBall.id > lastProcessedBallId) {
+                
+                // Prevent effects on first load or if we are just opening the view
+                if (isViewJustOpened) {
+                    lastProcessedBallId = lastBall.id;
+                } else if(lastBall.id > lastProcessedBallId) {
                     lastProcessedBallId = lastBall.id;
                     triggerEventEffects(lastBall);
                     // NEW: Trigger Flying Score Animation
@@ -1164,24 +1190,64 @@
             const ctxBar = document.getElementById('barChart');
             
             if(ctxWorm && !wormChartInstance) {
-                const d1 = state.innings[1].history.map(h => h.runs);
-                const d2 = state.innings[2].history.map(h => h.runs);
-                const labels = Array.from({length: Math.max(d1.length, d2.length)}, (_, i) => i);
+                // Ensure data points use x,y coordinates for proper scaling with scatter
+                const d1 = state.innings[1].history.map(h => ({x: h.over, y: h.runs}));
+                const d2 = state.innings[2].history.map(h => ({x: h.over, y: h.runs}));
 
                 wormChartInstance = new Chart(ctxWorm, {
                     type: 'line',
                     data: {
-                        labels: labels,
                         datasets: [
-                            { label: '১ম ইনিংস', data: d1, borderColor: '#10b981', tension: 0.4, pointRadius: 0, borderWidth: 2 },
-                            { label: '২য় ইনিংস', data: d2, borderColor: '#f59e0b', tension: 0.4, pointRadius: 0, borderWidth: 2 }
+                            { 
+                                label: '১ম ইনিংস', 
+                                data: d1, 
+                                borderColor: '#10b981', 
+                                tension: 0.4, 
+                                pointRadius: 0, 
+                                borderWidth: 2 
+                            },
+                            { 
+                                label: '২য় ইনিংস', 
+                                data: d2, 
+                                borderColor: '#f59e0b', 
+                                tension: 0.4, 
+                                pointRadius: 0, 
+                                borderWidth: 2 
+                            },
+                            // Wicket Scatter Points
+                            {
+                                label: 'উইকেট (১ম)',
+                                data: state.innings[1].wicketsData,
+                                type: 'scatter',
+                                pointStyle: 'circle',
+                                pointRadius: 5,
+                                backgroundColor: 'white',
+                                borderColor: '#10b981',
+                                borderWidth: 2,
+                                showLine: false
+                            },
+                            {
+                                label: 'উইকেট (২য়)',
+                                data: state.innings[2].wicketsData,
+                                type: 'scatter',
+                                pointStyle: 'circle',
+                                pointRadius: 5,
+                                backgroundColor: 'white',
+                                borderColor: '#f59e0b',
+                                borderWidth: 2,
+                                showLine: false
+                            }
                         ]
                     },
                     options: {
                         responsive: true, maintainAspectRatio: false,
                         plugins: { legend: { display: true, labels: { color: '#9ca3af', font: {size: 10} } } },
                         scales: {
-                            x: { display: false },
+                            x: { 
+                                type: 'linear', // Required for mixing line and scatter accurately
+                                grid: { display: false, color: '#374151' }, 
+                                ticks: { color: '#9ca3af', stepSize: 5 } 
+                            },
                             y: { grid: { color: '#374151', display: false }, ticks: { color: '#9ca3af' } }
                         }
                     }
